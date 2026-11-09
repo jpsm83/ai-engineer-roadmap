@@ -14,6 +14,10 @@ This document maps that path, prioritized by relevance to building AI products, 
 
 > **Design principle:** learn the *minimum* ML needed to make good engineering decisions, then spend the rest of your time shipping AI features end-to-end.
 
+> **Python setup reference:** [PYTHON_REFERENCE.md](PYTHON_REFERENCE.md) explains
+> `.venv/`, `__pycache__/`, and the `__init__` method for every Python exercise
+> folder in this repository.
+
 ---
 
 ## 🎯 Target Role & Scope
@@ -101,15 +105,15 @@ Write a one-page decision guide — "When do I prompt, when do I add RAG, when d
 *Skip most of this if you already write Python. The goal is AI idioms, not the language.*
 
 ### 🧠 Topic Checklist
-- [ ] Python fluency check: type hints, async/await, generators, decorators, Pydantic
-- [ ] Environments & dependency management (uv/poetry/venv)
-- [ ] Project layout for AI services (config, secrets, logging, tests)
+- [x] Python fluency check: type hints, async/await, generators, decorators, Pydantic
+- [x] Environments & dependency management (uv/poetry/venv)
+- [x] Project layout for AI services (config, secrets, logging, tests)
 
 ### 🎓 DeepLearning.AI — Stage 1: Python & AI Fluency (Weeks 1–2 · fast-track)
 
 You already program. Treat this as an AI-idiom speedrun, not a from-zero course.
 
-- [ ] 💳 `Python` — FreeCodeCamp.
+- [x] 💳 `Python` — FreeCodeCamp.
 - [ ] *(optional)* `AI Python for Beginners` — only if you want a structured refresher.
 
 ### 📚 Resource Hub (Phase 1)
@@ -128,10 +132,10 @@ Rebuild one small existing script of yours as a typed, tested Python service.
 *Enough theory to debug behavior and budget cost — not enough to build a model.*
 
 ### 🧠 Topic Checklist
-- [ ] Transformer at a conceptual level: tokens in → next-token probabilities out
+- [x] Transformer at a conceptual level: tokens in → next-token probabilities out
 - [ ] Tokenization: why "characters ≠ tokens," and how it affects cost and truncation
 - [ ] Context window: what fits, what gets dropped, and how to manage it
-- [ ] Encoder-only vs. decoder-only vs. encoder-decoder (one paragraph each)
+- [x] Encoder-only vs. decoder-only vs. encoder-decoder (one paragraph each)
 - [ ] Model families & provider trade-offs: GPT, Claude, Gemini, Llama, Mistral
 - [ ] Chat vs. completion vs. reasoning models — when each is appropriate
 - [ ] Structured outputs & tool calling as first-class model features
@@ -144,7 +148,7 @@ Rebuild one small existing script of yours as a typed, tested Python service.
 
 Concepts, not training. Prefer docs and short videos over long courses.
 
-- [ ] ✅ `Attention in Transformers: Concepts and Code in PyTorch` (StatQuest) — 1h16m — watch for intuition; you won't implement it in production.
+- [x] ✅ `Attention in Transformers: Concepts and Code in PyTorch` (StatQuest) — 1h16m — watch for intuition; you won't implement it in production.
 - [ ] ✅ `Finetuning Large Language Models` (Lamini) — ~1h — understand full fine-tune vs. PEFT/LoRA **as a decision**, not a skill.
 - [ ] 💳 *(optional)* `Generative AI with Large Language Models` (AWS) — 13h18m — only if you want the lifecycle narrative and Bedrock context.
 
