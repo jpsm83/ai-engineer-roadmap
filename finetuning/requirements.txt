@@ -1,0 +1,2 @@
+lamini==2.5.7
+python-dotenv==1.2.4
