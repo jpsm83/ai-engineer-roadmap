@@ -22,6 +22,7 @@ attention_transformers/
 ├── .venv/                        # local virtual environment (not committed)
 ├── __pycache__/                  # compiled bytecode (not committed)
 ├── README.md
+├── requirements.txt              # pinned dependencies for this folder
 ├── encoder_decoder_attention.py
 ├── masked_self_attention.py
 └── self_attention.py
@@ -39,10 +40,14 @@ Open a terminal and run these commands from the repository root:
 cd ~/code/ai-engineer-roadmap/attention_transformers
 python3 -m venv .venv
 source .venv/bin/activate
-pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements.txt
 ```
 
-The `--extra-index-url` installs the CPU-only build of PyTorch (about 210 MB).
+`requirements.txt` pins the packages used here. It is the Python equivalent of
+`package.json` in a Node project: it records what to install so the environment
+can be recreated on another machine. The first line,
+`--extra-index-url https://download.pytorch.org/whl/cpu`, installs the CPU-only
+build of PyTorch (about 210 MB).
 A plain `pip install torch` on Linux pulls the CUDA build and its NVIDIA
 dependencies, which can exceed 3 GB and may fail with
 `OSError: [Errno 122] Disk quota exceeded`. Running this small example does
@@ -71,9 +76,9 @@ system Python.
 `PATH` so that `python` and `pip` point into `.venv/`. You will usually see
 `(.venv)` in your prompt.
 
-**`pip install torch --extra-index-url https://download.pytorch.org/whl/cpu`**
-downloads PyTorch into `.venv/lib/.../site-packages`. It is not installed
-globally, so it is only available while the environment is activated.
+**`pip install -r requirements.txt`** downloads the pinned packages (PyTorch
+and its dependencies) into `.venv/lib/.../site-packages`. They are not installed
+globally, so they are only available while the environment is activated.
 
 > Use `pwd` to check the current directory and `cd` to move around. All
 > commands below assume you are inside `attention_transformers/`.
@@ -197,7 +202,7 @@ python -c "import torch; print(torch.__version__)"
   rm -rf .venv
   python3 -m venv .venv
   source .venv/bin/activate
-  pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
+  pip install -r requirements.txt
   ```
 
 - Only one environment can be active in a terminal at a time. Before
@@ -225,18 +230,27 @@ python -c "import torch; print(torch.__version__)"
   this example. Install NumPy with `pip install numpy` if you want to silence
   it.
 
-## Optional: recording dependencies
+## Managing dependencies
 
-To record the exact package versions used by this environment:
+`requirements.txt` in this folder lists the packages this example needs, pinned
+to exact versions. It plays the same role as `package.json` in a Node project:
+it is the record of what must be installed.
+
+To install (or reinstall) everything into an activated environment:
 
 ```bash
 cd ~/code/ai-engineer-roadmap/attention_transformers
 source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+If you add or upgrade a package, update the file from the activated environment:
+
+```bash
 pip freeze > requirements.txt
 ```
 
-To recreate the same packages in another environment:
-
-```bash
-pip install -r requirements.txt
-```
+`pip freeze` records every installed package, including transitive
+dependencies. It also writes the resolved `+cpu` version of PyTorch, so keep the
+`--extra-index-url` line at the top of the file or `pip install -r` will not
+find that build.

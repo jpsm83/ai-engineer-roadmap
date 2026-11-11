@@ -18,6 +18,14 @@ This document maps that path, prioritized by relevance to building AI products, 
 > `.venv/`, `__pycache__/`, and the `__init__` method for every Python exercise
 > folder in this repository.
 
+> **Dependencies:** each Python folder has its own `requirements.txt` (the
+> Python equivalent of `package.json`). Install with `pip install -r
+> requirements.txt` from inside that folder's activated `.venv/`.
+
+> **Secrets:** API keys and URLs live in a single `.env` at the repository root.
+> It is gitignored and never committed; create it locally with the variables
+> each exercise needs.
+
 ---
 
 ## 🎯 Target Role & Scope
