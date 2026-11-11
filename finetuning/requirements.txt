@@ -1,2 +1,7 @@
 lamini==2.5.7
 python-dotenv==1.2.4
+jsonlines==4.0.0
+pandas==3.0.6
+datasets==3.6.0
+pyarrow==17.0.0
+huggingface-hub==0.34.0
