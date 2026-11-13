@@ -6,8 +6,10 @@ Rules for every document in `study_docs_qa/`. The goal is a consistent, fast-ref
 
 ## 1. Files
 
-- One Markdown file per course.
-- Filename: lowercase `snake_case` derived from the course title, ending in `.md` (e.g., `ai_for_everyone.md`).
+- Group related courses into numbered topic folders: `NN_topic_slug/` (e.g., `01_orientation/`).
+- Use one Markdown file per course, or one file per section when a course is split across parts: `NN_section_slug.md`.
+- Filename: lowercase `snake_case` derived from the course or section title, ending in `.md`. Use a two-digit numeric prefix for ordering (e.g., `01_ai_for_everyone.md`).
+- Current layout: `00_ai_coding_crash_course/` holds one file per course section; `01_orientation/` and `02_llm_literacy/` hold one file per course.
 - Plain Markdown only: no front matter, no HTML, no generated TOCs.
 - UTF-8, LF line endings, final newline.
 
@@ -15,10 +17,10 @@ Rules for every document in `study_docs_qa/`. The goal is a consistent, fast-ref
 
 Every course document follows this exact order:
 
-1. **H1 title:** `# <Course Title> — Q&A`
+1. **H1 title:** `# <Course Title> — Q&A`, or `# <Course Title> — <Section> — Q&A` for a file that covers one course section.
 2. **Intro:** one or two lines.
    `Fast-reference notes for <Instructor>'s *<Course Title>* (<Publisher>).`
-3. **Syllabus flow:** one bold line with the main topics, separated by `→`, ending with a period.
+3. **Syllabus flow:** one bold line with the main topics of the course or section, separated by `→`, ending with a period.
    `**Topic 1 → Topic 2 → Topic 3.**`
 4. `---`
 5. **Body sections** following the course outline.
@@ -28,7 +30,7 @@ Every course document follows this exact order:
 
 Closing note:
 
-`*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*`
+`*Study aid; for authoritative content, refer to the official <Publisher> course.*`
 
 ## 3. Headings
 
@@ -101,15 +103,15 @@ A: Direct answer in one to three sentences.
 
 ## 7. Length Targets
 
-- Short course (1–2 hours): **1,500–2,200 words**.
-- Multi-week course: **up to ~2,500 words**.
+- Short course (1–2 hours): **1,500–2,200 words per file**.
+- Multi-week course or one section of a split course: **up to ~2,500 words per file**.
 - If over target, merge overlapping Q&As and tighten wording. Never drop required information.
 - Revised drafts should be measurably shorter than the first draft (aim for 15–25% fewer words).
 
 ## 8. Quality Checklist
 
-- [ ] Filename is lowercase `snake_case.md`.
-- [ ] One H1 in the form `# Course Title — Q&A`.
+- [ ] File sits in a numbered `NN_topic_slug/` folder and uses a lowercase `snake_case` filename with an optional numeric prefix.
+- [ ] One H1 in the form `# Course Title — Q&A`, or `# Course Title — Section — Q&A` for a split course.
 - [ ] Intro and bold syllabus-flow line present.
 - [ ] Structure mirrors the official course outline.
 - [ ] Every item uses the `**Q: …**` / `A: …` format.
@@ -126,7 +128,7 @@ A: Direct answer in one to three sentences.
 
 ## 9. Template
 
-Copy this skeleton for a new course document.
+Copy this skeleton for a new course document. For a split course, use one file per section and add the section to the H1: `# COURSE TITLE — SECTION — Q&A`.
 
 ```markdown
 # COURSE TITLE — Q&A
@@ -176,5 +178,5 @@ A: Direct answer.
 
 ---
 
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*
+*Study aid; for authoritative content, refer to the official PUBLISHER course.*
 ```

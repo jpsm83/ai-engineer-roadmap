@@ -164,15 +164,15 @@ Rebuild one small existing script of yours as a typed, tested Python service.
 
 ### 🧠 Topic Checklist
 - [x] Transformer at a conceptual level: tokens in → next-token probabilities out
-- [ ] Tokenization: why "characters ≠ tokens," and how it affects cost and truncation
-- [ ] Context window: what fits, what gets dropped, and how to manage it
-- [ ] 🔥 Message roles: system, user, assistant — how every API call is structured
+- [x] Tokenization: why "characters ≠ tokens," and how it affects cost and truncation
+- [x] Context window: what fits, what gets dropped, and how to manage it
+- [x] 🔥 Message roles: system, user, assistant — how every API call is structured
 - [x] Encoder-only vs. decoder-only vs. encoder-decoder (one paragraph each)
-- [ ] Model families & provider trade-offs: GPT, Claude, Gemini, Llama, Mistral
-- [ ] Chat vs. completion vs. reasoning models — when each is appropriate
-- [ ] Structured outputs & tool calling as first-class model features
-- [ ] Hallucination: why it happens and the engineering responses (grounding, citations, evals)
-- [ ] What fine-tuning is — and the decision rule from Phase 0
+- [x] Model families & provider trade-offs: GPT, Claude, Gemini, Llama, Mistral
+- [x] Chat vs. completion vs. reasoning models — when each is appropriate
+- [x] Structured outputs & tool calling as first-class model features
+- [x] Hallucination: why it happens and the engineering responses (grounding, citations, evals)
+- [x] What fine-tuning is — and the decision rule from Phase 0
 
 **Deferred (know they exist, don't study deeply):** pretraining from scratch, masked language modeling, attention math, LoRA/QLoRA internals, model distillation.
 
@@ -181,7 +181,7 @@ Rebuild one small existing script of yours as a typed, tested Python service.
 Concepts, not training. Prefer docs and short videos over long courses.
 
 - [x] ✅ `Attention in Transformers: Concepts and Code in PyTorch` (StatQuest) — 1h16m — watch for intuition; you won't implement it in production.
-- [ ] ✅ `Finetuning Large Language Models` (Lamini) — ~1h — understand full fine-tune vs. PEFT/LoRA **as a decision**, not a skill.
+- [x] ✅ `Finetuning Large Language Models` (Lamini) — ~1h — understand full fine-tune vs. PEFT/LoRA **as a decision**, not a skill.
 - [ ] 💳 *(optional)* `Generative AI with Large Language Models` (AWS) — 13h18m — only if you want the lifecycle narrative and Bedrock context.
 
 **Drop from the old plan:** `Transformers in Practice` (11 h), `Build and Train an LLM with JAX`, `Deep Learning Specialization`. These serve the ML path.
