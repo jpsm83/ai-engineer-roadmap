@@ -1,3 +1,11 @@
+"""Encoder-decoder (cross) attention and a simplified multi-head attention.
+
+In self-attention, queries, keys and values all come from the same sequence.
+Here the decoder supplies the queries while the encoder supplies the keys and
+values. The multi-head class at the bottom runs several attention heads and
+concatenates their outputs.
+"""
+
 import torch ## torch let's us create tensors and also provides helper functions
 import torch.nn as nn ## torch.nn gives us nn.module() and nn.Linear()
 import torch.nn.functional as F # This gives us the softmax()
@@ -8,8 +16,10 @@ class Attention(nn.Module):
                  row_dim=0, 
                  col_dim=1):
         
+        ## Initialize nn.Module before assigning any layers.
         super().__init__()
         
+        ## Three learned projections, one each for queries, keys and values.
         self.W_q = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
         self.W_k = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
         self.W_v = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
@@ -22,17 +32,23 @@ class Attention(nn.Module):
     ## now we expect 3 sets of encodings to be passed in...
     def forward(self, encodings_for_q, encodings_for_k, encodings_for_v, mask=None):
         ## ...and we pass those sets of encodings to the various weight matrices.
+        ## Step 1: separate projections for queries (decoder), keys and values
+        ## (encoder).
         q = self.W_q(encodings_for_q)
         k = self.W_k(encodings_for_k)
         v = self.W_v(encodings_for_v)
 
+        ## Step 2: score every decoder query against every encoder key.
         sims = torch.matmul(q, k.transpose(dim0=self.row_dim, dim1=self.col_dim))
 
+        ## Step 3: scale by sqrt(d_k) to keep the scores well behaved.
         scaled_sims = sims / torch.tensor(k.size(self.col_dim)**0.5)
 
+        ## Step 4: optionally hide invalid positions before softmax.
         if mask is not None:
             scaled_sims = scaled_sims.masked_fill(mask=mask, value=-1e9)
             
+        ## Step 5: normalize scores and blend the value vectors.
         attention_percents = F.softmax(scaled_sims, dim=self.col_dim)
 
         attention_scores = torch.matmul(attention_percents, v)
@@ -102,9 +118,11 @@ class MultiHeadAttention(nn.Module):
                  col_dim=1, 
                  num_heads=1):
         
+        ## Initialize nn.Module before assigning any layers.
         super().__init__()
 
         ## create a bunch of attention heads
+        ## nn.ModuleList registers each head so PyTorch can track its parameters.
         self.heads = nn.ModuleList(
             [Attention(d_model, row_dim, col_dim) 
              for _ in range(num_heads)]
@@ -118,6 +136,8 @@ class MultiHeadAttention(nn.Module):
                 encodings_for_v):
 
         ## run the data through all of the attention heads
+        ## Each head returns d_model columns; concatenating along col_dim turns
+        ## num_heads * d_model columns into the combined output.
         return torch.cat([head(encodings_for_q, 
                                encodings_for_k,
                                encodings_for_v) 

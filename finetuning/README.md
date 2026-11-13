@@ -1,11 +1,19 @@
-# Fine-tuning vs. Non-fine-tuned Models
+# Fine-tuning Course Examples
 
-This folder compares the output of a fine-tuned Lamini model against the same
-base model without fine-tuning.
+This folder contains the course examples for fine-tuning a language model,
+from inspecting data to comparing a fine-tuned model with its base model.
 
-- `finetuned_vs_non_finetuned.py` — sends the same prompt
-  (`"Tell me how to train my dog to sit"`) to a non-fine-tuned
-  `meta-llama/Llama-2-7b-hf` model and prints the result.
+- `01_finetuned_vs_non_finetuned.py` — sends the same prompts to a
+  non-fine-tuned `meta-llama/Llama-2-7b-hf` model and to the chat/fine-tuned
+  version, then prints both results.
+- `02_finetuning_data.py` — inspects pretraining data and builds the
+  `lamini_docs_processed.jsonl` instruction dataset.
+- `03_data_preparation.py` — tokenizer basics, padding, truncation, prompt
+  templating, and tokenized train/test splits.
+- `04_training_process.py` — a short local Hugging Face training run (CPU
+  friendly) plus the hosted Lamini training examples when credentials exist.
+- `05_evaluation.py` — exact-match evaluation of the fine-tuned model, plus an
+  optional lm-evaluation-harness ARC Easy benchmark.
 
 For a beginner-friendly study reference about `.venv/`, `__pycache__/`, and
 the `__init__` method, see
@@ -20,7 +28,13 @@ finetuning/
 ├── __pycache__/                  # compiled bytecode (not committed)
 ├── README.md
 ├── requirements.txt              # pinned dependencies for this folder
-└── finetuned_vs_non_finetuned.py
+├── 01_finetuned_vs_non_finetuned.py
+├── 02_finetuning_data.py
+├── 03_data_preparation.py
+├── 04_training_process.py
+├── 05_evaluation.py
+├── lamini_docs.jsonl             # raw instruction data
+└── lamini_docs_processed.jsonl   # generated question/answer data
 ```
 
 Credentials live in a single `.env` at the **repository root** (one level above
@@ -30,7 +44,7 @@ this folder), so every script in the repository shares it:
 ai-engineer-roadmap/
 ├── .env                          # real credentials (not committed)
 └── finetuning/
-    └── finetuned_vs_non_finetuned.py
+    └── 01_finetuned_vs_non_finetuned.py
 ```
 
 ## First-time setup
@@ -93,6 +107,10 @@ requirements.txt`**) installs the pinned packages into `.venv/`:
   `3.4.4+` declares a `umap` dependency that does not exist on PyPI.
 - `python-dotenv==1.2.4` — loads the credentials from the `.env` file into the
   environment.
+- `transformers==4.46.3` — tokenizers, model classes, and `Trainer`.
+- `torch==2.9.0` — the deep-learning backend used by `transformers`.
+- `accelerate==1.2.1` — required by the Transformers `Trainer`.
+- `tqdm==4.70.1` — progress bars in the evaluation script.
 
 `requirements.txt` is the Python equivalent of `package.json` in a Node
 project: it records the exact versions this folder needs, so the environment can
@@ -137,18 +155,33 @@ Rules for this file:
   `load_dotenv(Path(__file__).resolve().parent.parent / ".env")`, so it works
   regardless of which directory you run it from.
 
-The script stops with a clear error if either value is missing or still set to
-`none`.
+The first script stops with a clear error if either value is missing or still
+set to `none`.
 
-## Running the script
+## Running the scripts
 
 Every time you open a **new terminal**, activate the environment first:
 
 ```bash
 cd ~/code/ai-engineer-roadmap/finetuning
 source .venv/bin/activate
-python finetuned_vs_non_finetuned.py
+
+# Requires valid Lamini credentials in the repository-root .env
+python 01_finetuned_vs_non_finetuned.py
+
+# Local data inspection and preparation
+python 02_finetuning_data.py
+python 03_data_preparation.py
+
+# Short local training run; Lamini-hosted parts are skipped without credentials
+python 04_training_process.py
+
+# Exact-match evaluation; lm-evaluation-harness is optional
+python 05_evaluation.py
 ```
+
+`05_evaluation.py` skips the optional benchmark unless `lm_eval` is installed
+or a local `lm-evaluation-harness/` directory exists next to it.
 
 You can tell the environment is active because `(.venv)` appears at the start
 of your prompt. To check which Python is being used:
@@ -175,7 +208,8 @@ You do **not** need to reinstall anything:
 ```bash
 cd ~/code/ai-engineer-roadmap/finetuning
 source .venv/bin/activate
-python finetuned_vs_non_finetuned.py
+python 02_finetuning_data.py
+python 03_data_preparation.py
 deactivate
 ```
 

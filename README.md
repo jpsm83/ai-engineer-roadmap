@@ -38,6 +38,25 @@ This document maps that path, prioritized by relevance to building AI products, 
 
 ---
 
+## 🎥 The 10-Step Fast Path (Video-Aligned)
+
+> Condensed from **"How to Become an AI Engineer Fast."** The phases below remain the working structure — this is the index over it. **🔥 = the video flags this as critical**, **🆕 = added to this roadmap from the video.**
+
+| # | Step | What it means | Where it lives |
+| :-- | :--- | :--- | :--- |
+| 1 | **Python fundamentals** | Functions, classes, dicts/lists, HTTP requests, JSON. Bar: a basic Flask API or CLI tool. | Phase 1 |
+| 2 | **How LLMs work** | Tokens, context window, temperature, system/user/assistant roles. | Phase 2 |
+| 3 | **LLM APIs** | OpenAI + Anthropic: calls, multi-turn conversations, error handling. | Phase 3.2 |
+| 4 | 🔥 **Prompt engineering & structured outputs** | System prompts, function calling, JSON mode — reliable, parseable responses. | Phase 3.1–3.2 |
+| 5 | 🔥 **RAG & vector databases** | Embed, store, retrieve, generate — grounding models in your data. | Phase 4 |
+| 6 | **Orchestration frameworks** | LangChain + LlamaIndex: chains, agents, tools, memory, multi-step workflows. | Phase 3.2 + Phase 5 |
+| 7 | 🔥 **LLM Ops & deployment** | Rate limiting, caching, monitoring, cost management. | Phases 6, 8, 9 |
+| 8 | **Portfolio** | Domain RAG chatbot, tool-using agent, semantic search tool. | Portfolio Projects 2, 2B, 3 |
+| 9 | **AI dev tools** | Cursor, Claude Code, Warp, agent orchestration — multiply your output. | Phase 3.3 |
+| 10 | 🆕 **Pass the interview** | DSA, ML/AI interview questions, portfolio walkthrough. | Interview Preparation |
+
+---
+
 ## 📖 How to Work Through This Roadmap
 
 Each phase below is a **self-contained working unit**. Read and work through a phase top to bottom, in this order:
@@ -48,6 +67,8 @@ Each phase below is a **self-contained working unit**. Read and work through a p
 4. **Milestone** — the artifact that proves the phase is done.
 5. **Portfolio project** — the build you do after the milestone (where the phase has one).
 6. **Coverage & notes** — deliberate skips, coverage status, and gaps courses don't fill.
+
+> 🔥 **Learn by building, not watching:** passive tutorials retain ~20%; writing code and shipping retains 75–90%. This is why every phase ends in a milestone artifact.
 
 > **Portfolio Projects (The Build Syllabus):** Build these in order. Each one is a production-shaped artifact, not a tutorial.
 
@@ -117,6 +138,8 @@ Write a one-page decision guide — "When do I prompt, when do I add RAG, when d
 - [x] Environments & dependency management (uv/poetry/venv)
 - [x] Project layout for AI services (config, secrets, logging, tests)
 
+> 🔥 **Video Step 1 bar:** you don't need to be a Python wizard, but you must be able to write a basic Flask API or CLI tool, handle JSON, and make HTTP requests. Every AI SDK is Python-first.
+
 ### 🎓 DeepLearning.AI — Stage 1: Python & AI Fluency (Weeks 1–2 · fast-track)
 
 You already program. Treat this as an AI-idiom speedrun, not a from-zero course.
@@ -143,6 +166,7 @@ Rebuild one small existing script of yours as a typed, tested Python service.
 - [x] Transformer at a conceptual level: tokens in → next-token probabilities out
 - [ ] Tokenization: why "characters ≠ tokens," and how it affects cost and truncation
 - [ ] Context window: what fits, what gets dropped, and how to manage it
+- [ ] 🔥 Message roles: system, user, assistant — how every API call is structured
 - [x] Encoder-only vs. decoder-only vs. encoder-decoder (one paragraph each)
 - [ ] Model families & provider trade-offs: GPT, Claude, Gemini, Llama, Mistral
 - [ ] Chat vs. completion vs. reasoning models — when each is appropriate
@@ -181,6 +205,8 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 ## 🔴 PHASE 3: Prompting & LLM Integration — HIGH PRIORITY
 *Core daily work — the interface between your code and the model.*
 
+> 🔥 **Video Steps 3–4:** the difference between *using* ChatGPT and *building* with AI is calling the API from code — then making it return reliable, structured output every time.
+
 ### 🧠 Topic Checklist
 
 #### 3.1 Prompt Engineering
@@ -198,9 +224,12 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 - [ ] LiteLLM or equivalent model-agnostic abstraction (provider switching, fallbacks)
 - [ ] Pure Python integration with no framework — understand what frameworks hide
 - [ ] LangChain & LangGraph fundamentals
+- [ ] 🔥 LlamaIndex fundamentals (indexes, query engines, tool-using agents) — video Step 6 pairs it with LangChain
 - [ ] Streaming responses (SSE / token streaming)
 
 #### 3.3 AI-Assisted Engineering Workflows
+> 🔥 **Video Step 9:** use AI tools (Cursor, Claude Code, Warp) daily — it multiplies output and teaches you how to design your own AI systems.
+
 - [ ] Code generation, debugging & refactoring with AI agents
 - [ ] Large-codebase context and multi-file navigation
 - [ ] Test generation & validation
@@ -260,6 +289,8 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 ## 🔴 PHASE 4: Embeddings & RAG — HIGH PRIORITY
 *The most common production AI pattern — grounding models in real data.*
 
+> 🔥 **Video Step 5:** RAG is hands-down the most in-demand AI engineering pattern. Most AI applications use some form of it.
+
 ### 🧠 Topic Checklist
 
 #### 4.1 Embeddings & Vector Search
@@ -316,6 +347,12 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 - **Stack:** Vector DB (Chroma/Qdrant/pgvector), embedding model, LLM API, simple UI.
 - **Skills:** Parsing, chunking, indexing, hybrid retrieval, reranking, grounding.
 - **Eval:** Retrieval precision/recall@k + answer groundedness. **This eval is part of the deliverable.**
+
+### 🛠️ Portfolio Project 2B (optional, video-aligned): Semantic Search Tool — 🟡 MEDIUM
+- **Goal:** Search a large dataset (products, articles, job postings) by *meaning*, not keywords.
+- **Stack:** Embeddings + vector DB + a thin API/UI.
+- **Skills:** Embedding pipelines, ANN search, metadata filters, result ranking.
+- **Eval:** Recall@k / MRR against a labeled query set.
 
 ### 📌 Coverage & Notes
 - **Coverage 4.1:** RAG course, On-Device Memory, Multi-vector — ✅ Strong.
@@ -532,6 +569,8 @@ Add an eval harness + tracing + a quality/latency/cost dashboard to Portfolio Pr
 ## 🟡 PHASE 9: Deployment & LLMOps — MEDIUM PRIORITY
 *You already know DevOps — adapt it for AI workloads. API-first; self-hosting is optional.*
 
+> 🔥 **Video Step 7:** LLM Ops is the step most people skip and the one employers value most — rate limiting, caching, monitoring, and cost management.
+
 ### 🧠 Topic Checklist
 - [ ] Containerize the AI service (multi-stage builds)
 - [ ] Serving APIs via FastAPI (or your existing backend framework)
@@ -593,6 +632,27 @@ Deploy Portfolio Project 4 with CI eval gates, tracing, and a rollback plan.
 
 ---
 
+## 🎤 INTERVIEW PREPARATION — FINAL STEP
+*🔥 Video Step 10. The portfolio gets you the interview; this gets you the offer.*
+
+### 🧠 Topic Checklist
+- [ ] Coding interview practice: DSA/LeetCode-style problems, timed
+- [ ] AI/ML interview questions: embeddings, RAG trade-offs, evals, agents, cost/latency
+- [ ] System design for AI products: ingestion, retrieval, caching, guardrails, observability
+- [ ] Portfolio walkthrough: explain each project's problem, architecture, trade-offs, and eval results
+- [ ] Behavioral stories tied to shipping AI features
+
+### 📚 Resource Hub
+
+| Resource / Platform | Topics Covered | Where to Find It |
+| :--- | :--- | :--- |
+| **AlgoExpert** *(Paid)* | ML/AI interview prep section (mentioned in the video) | [algoexpert.io](https://www.algoexpert.io) |
+
+### 🎯 Milestone
+Complete a mock interview loop: one coding round, one AI system-design round, and a full portfolio walkthrough with eval results.
+
+---
+
 ## 🧭 Suggested Cadence
 
 1. **Weeks 1–2** — Stages 0–2 (orientation, ML literacy, LLM literacy). Cheap and fast; no ML specialization.
@@ -602,5 +662,6 @@ Deploy Portfolio Project 4 with CI eval gates, tracing, and a rollback plan.
 5. **Weeks 12–15** — Stages 6–7 (MCP, applied engineering, eval/observability).
 6. **Weeks 15–16** — Stage 8 (deployment). Finish and deploy Project 4.
 7. **Week 17+** — Stage 9 optional depth, driven by your product.
+8. **Weeks 12+ (parallel)** — Interview prep: start DSA and AI interview questions while Projects 3–4 are fresh; go full-time for the final 2–4 weeks.
 
 **Subscription strategy:** stay free through Stages 0–1 and most of Stage 3. Buy **Pro for ~2 months** to cover `RAG` (Stage 4) + `Agentic AI` (Stage 5), then cancel. Everything else is free short courses plus docs and building. Expected total cost is far lower than the old plan — and you skip ~200 hours of ML theory you would never use.

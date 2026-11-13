@@ -1,13 +1,16 @@
-# Python Study Reference: `.venv`, `__pycache__`, and `__init__`
+# Python Study Reference: `.venv`, dependencies, `__pycache__`, and `__init__`
 
-This document explains two generated folders and one special Python method:
+This document explains two generated folders, dependency files, and one special
+Python method:
 
 - `.venv/` stores an isolated Python environment and its installed packages.
+- `requirements.txt` records which packages the project needs.
 - `__pycache__/` stores compiled bytecode created automatically by Python.
 - `__init__` is the special method Python calls to initialize a new object.
 
 The two folders are generated locally and should not be committed to git.
-`__init__` is part of Python's object model and is written by you.
+`requirements.txt` is a source file you maintain. `__init__` is part of Python's
+object model and is written by you.
 
 This file lives at the repository root because it applies to every Python
 folder in the repository. A typical layout with one environment per folder:
@@ -111,7 +114,8 @@ Benefits:
   system Python or other projects.
 - **Independent versions:** each project can use different package versions.
 - **Reproducibility:** `pip freeze > requirements.txt` records versions so
-  another machine can recreate the same setup.
+  another machine can recreate the same setup (see 1.13 for the caveat about
+  direct versus transitive dependencies).
 - **Safety:** no `sudo` is required to install packages.
 - **Easy cleanup:** deleting the environment removes all its packages.
 - **Experimentation:** you can break and recreate an environment without
@@ -325,7 +329,120 @@ To recreate an environment on another machine, copy the project source and
 - **Deleting `.venv` and thinking code is lost.** Only packages are removed;
   source files are not inside `.venv`.
 
-## 1.13 Relationship to other tools
+## 1.13 `requirements.txt` and dependency management
+
+`.venv` isolates packages, but it does not remember which ones you meant to
+install. `requirements.txt` is that record. It is a plain text file with one
+package per line, usually pinned to an exact version:
+
+```text
+pandas==3.0.6
+datasets==3.6.0
+transformers==4.46.3
+```
+
+Recreate the environment's packages from it with:
+
+```bash
+source .venv/bin/activate
+pip install -r requirements.txt
+# or, without activating:
+.venv/bin/python -m pip install -r requirements.txt
+```
+
+### Direct versus transitive dependencies
+
+Only list the packages your code **imports directly**:
+
+- **Direct dependency:** your code does `import pandas`, so `pandas` belongs in
+  `requirements.txt`.
+- **Transitive dependency:** `pandas` needs `numpy`, and `transformers` needs
+  `tokenizers`, but your code never imports them. They are installed
+  automatically and do not need to be listed.
+
+Why prefer direct dependencies only?
+
+- The file stays short and readable.
+- When a direct package changes its own requirements, it brings the new
+  versions automatically.
+- Listing transitive packages can pin them to versions a direct package no
+  longer supports, causing conflicts.
+
+For full reproducibility, use a **lockfile** instead of listing every
+transitive package by hand. With `uv`:
+
+```bash
+uv lock        # records the complete resolved set in uv.lock
+uv sync        # recreates the environment from that lockfile
+```
+
+### Installing a library does not update `requirements.txt`
+
+`pip install` and `uv pip install` only change the environment. They do not edit
+`requirements.txt`. After installing a package you actually intend to keep, add
+the same pinned version to the file manually:
+
+```bash
+uv pip install --python .venv/bin/python "torch==2.9.0"
+# then add this line to requirements.txt: torch==2.9.0
+```
+
+### `pip freeze` and its caveat
+
+This command writes the exact versions of **everything** installed:
+
+```bash
+source .venv/bin/activate
+uv pip freeze > requirements.txt
+```
+
+The `>` operator overwrites the file. Because the output includes transitive
+dependencies, it is a full snapshot rather than a clean list of direct
+dependencies. That is useful when you need exact reproducibility, but it makes
+`requirements.txt` long and machine-specific. For a course project, a short
+hand-maintained list is usually better.
+
+If you want a pinned file generated from a direct-only source list, keep the
+direct dependencies in `requirements.in` and compile them:
+
+```bash
+uv pip compile requirements.in -o requirements.txt
+```
+
+You then edit only `requirements.in`; the generated file records pinned direct
+and transitive versions.
+
+### Libraries are not automatically per folder
+
+Python does not give every folder its own libraries. A package goes into the
+environment whose `python` or `pip` you used:
+
+- Activate `finetuning/.venv`, then `pip install ...` installs into that
+  environment only.
+- With no environment active, `pip install ...` targets the system Python (or
+  fails if the system marks itself externally managed).
+- Running `.venv/bin/python script.py` uses that environment even without
+  activation.
+
+### Optional framework backends
+
+Some libraries split optional features into heavy backends. For example,
+`transformers` prints:
+
+```text
+None of PyTorch, TensorFlow >= 2.0, or Flax have been found. Models won't be
+available and only tokenizers, configuration and file/data utilities can be used.
+```
+
+This is a warning, not an error. Tokenizer-only code such as
+`AutoTokenizer` works without PyTorch. Install `torch` only when you need to
+load or run models:
+
+```bash
+uv pip install --python .venv/bin/python torch
+```
+
+## 1.14 Relationship to other tools
 
 - `pip` installs packages into the active environment.
 - `requirements.txt` records package versions for recreation.
@@ -335,7 +452,7 @@ To recreate an environment on another machine, copy the project source and
   dependency managers with additional features. You do not need them to run
   this example.
 
-## 1.14 Command cheat sheet
+## 1.15 Command cheat sheet
 
 ```bash
 # Create
@@ -353,9 +470,20 @@ python -c "import sys; print(sys.prefix)"
 
 # Install and inspect
 pip install torch
+# or with uv, without activating:
+uv pip install --python .venv/bin/python torch
 pip list
 pip show torch
+
+# Record dependencies
+# Preferred: add only the direct dependency, pinned, by editing the file.
+# Full snapshot (includes transitive dependencies, overwrites the file):
 pip freeze > requirements.txt
+# Pinned file generated from a direct-only requirements.in:
+uv pip compile requirements.in -o requirements.txt
+# Full lockfile workflow:
+uv lock
+uv sync
 
 # Run
 python self_attention.py
