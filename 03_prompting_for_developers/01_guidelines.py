@@ -15,6 +15,9 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message["content"]
 
+'''
+# =========================== example 1 ===========================
+
 text = f"""
 You should express what you want a model to do by \
 providing instructions that are as clear and \
@@ -35,6 +38,8 @@ into a single sentence.
 response = get_completion(prompt)
 print(response)
 
+# =========================== example 2 ===========================
+
 prompt = f"""
 Generate a list of three made-up book titles along \
 with their authors and genres. 
@@ -43,6 +48,8 @@ book_id, title, author, genre.
 """
 response = get_completion(prompt)
 print(response)
+
+# =========================== example 3 ===========================
 
 text_1 = f"""
 Making a cup of tea is easy! First, you need to get some \
@@ -74,6 +81,8 @@ response = get_completion(prompt)
 print("Completion for Text 1:")
 print(response)
 
+# =========================== example 4 ===========================
+
 text_2 = f"""
 The sun is shining brightly today, and the birds are \
 singing. It's a beautiful day to go for a \
@@ -104,6 +113,8 @@ response = get_completion(prompt)
 print("Completion for Text 2:")
 print(response)
 
+# =========================== example 5 ===========================
+
 prompt = f"""
 Your task is to answer in a consistent style.
 
@@ -118,6 +129,8 @@ the most intricate tapestry begins with a solitary thread.
 """
 response = get_completion(prompt)
 print(response)
+
+# =========================== example 6 ===========================
 
 text = f"""
 In a charming village, siblings Jack and Jill set out on \
@@ -149,6 +162,20 @@ response = get_completion(prompt_1)
 print("Completion for prompt 1:")
 print(response)
 
+# =========================== example 7 ===========================
+
+text = f"""
+In a charming village, siblings Jack and Jill set out on \
+a quest to fetch water from a hilltop \
+well. As they climbed, singing joyfully, misfortune \
+struck—Jack tripped on a stone and tumbled \
+down the hill, with Jill following suit. \
+Though slightly battered, the pair returned home to \
+comforting embraces. Despite the mishap, \
+their adventurous spirits remained undimmed, and they \
+continued exploring with delight.
+"""
+
 prompt_2 = f"""
 Your task is to perform the following actions: 
 1 - Summarize the following text delimited by 
@@ -170,6 +197,8 @@ Text: <{text}>
 response = get_completion(prompt_2)
 print("\nCompletion for prompt 2:")
 print(response)
+
+# =========================== example 8 ===========================
 
 prompt = f"""
 Determine if the student's solution is correct or not.
@@ -195,6 +224,8 @@ Total cost: 100x + 250x + 100,000 + 100x = 450x + 100,000
 """
 response = get_completion(prompt)
 print(response)
+
+# =========================== example 9 ===========================
 
 prompt = f"""
 Your task is to determine if the student's solution \
@@ -255,9 +286,13 @@ Actual solution:
 response = get_completion(prompt)
 print(response)
 
+'''
+
+# =========================== example 10 ===========================
+# hallucination
+
 prompt = f"""
 Tell me about AeroGlide UltraSlim Smart Toothbrush by Boie
 """
 response = get_completion(prompt)
 print(response)
-
