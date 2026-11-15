@@ -1,0 +1,151 @@
+Provide clear and specific instructions to guide the model toward the desired output, recognizing that longer prompts—not just shorter ones—often offer more clarity and context and can reduce irrelevant or incorrect results.
+[
+  {
+    "book_id": "BK001",
+    "title": "The Velvet Compass",
+    "author": "Rhea Larkin",
+    "genre": "Fantasy"
+  },
+  {
+    "book_id": "BK002",
+    "title": "The Echoes of Glass City",
+    "author": "Mira Calderon",
+    "genre": "Mystery"
+  },
+  {
+    "book_id": "BK003",
+    "title": "Stellar Orchard",
+    "author": "Jonah Kestrel",
+    "genre": "Science Fiction"
+  }
+]
+Completion for Text 1:
+Step 1 - Boil water.
+Step 2 - Grab a cup and put a tea bag in it.
+Step 3 - Pour the hot water over the tea bag.
+Step 4 - Let the tea steep for a few minutes.
+Step 5 - Remove the tea bag.
+Step 6 - Add sugar or milk to taste (optional).
+Step 7 - Enjoy your cup of tea.
+Completion for Text 2:
+No steps provided.
+Resilience is the stubborn flame that keeps burning when the room goes dark; it is the oak that grows taller after every storm, its roots deepening unseen; it is the dawn that comes again because the night would not keep its quiet.
+Completion for prompt 1:
+Jack and Jill embark on a quest to fetch water from a hilltop well, trip down the hill with Jill following, but return home slightly battered yet undaunted and continue exploring with joy.
+
+Jack et Jill entreprennent une quête pour aller chercher de l’eau dans un puits situé au sommet d’une colline; ils trébuchent en descendant la colline, et Jill les suit, mais rentrent chez eux légèrement blessés et, malgré tout, intrépides, et poursuivent l’exploration avec joie.
+
+- Jack
+- Jill
+
+{"french_summary":"Jack et Jill entreprennent une quête pour aller chercher de l’eau dans un puits situé au sommet d’une colline; ils trébuchent en descendant la colline, et Jill les suit, mais rentrent chez eux légèrement blessés et,malgré tout, intrépides, et poursuivent l’exploration avec joie.","num_names":2}
+
+Completion for prompt 2:
+Text: <In a charming village, siblings Jack and Jill set out on a quest to fetch water from a hilltop well. As they climbed, singing joyfully, misfortune struck—Jack tripped on a stone and tumbled down the hill, with Jill following suit. Though slightly battered, the pair returned home to comforting embraces. Despite the mishap, their adventurous spirits remained undimmed, and they continued exploring with delight.>
+Summary: In a charming village, siblings Jack and Jill set out to fetch water from a hilltop well, fall when Jack trips on a stone, and return home with comforting embraces before continuing their adventures with undimmed spirits.
+Translation: Dans un village charmant, les frères et sœurs Jack et Jill partent à la recherche d'eau dans un puits perché sur une colline, ils tombent lorsque Jack trébuche sur une pierre, et rentrent chez eux avec des étreintes réconfortantes avant de poursuivre leurs aventures avec un esprit inébranlable.
+Names: Jack, Jill
+Output JSON: {"french_summary": "Dans un village charmant, les frères et sœurs Jack et Jill partent à la recherche d'eau dans un puits perché sur une colline, ils tombent lorsque Jack trébuche sur une pierre, et rentrent chez eux avecdes étreintes réconfortantes avant de poursuivre leurs aventures avec un esprit inébranlable.", "num_names": 2}
+Not correct.
+
+Mistake: The maintenance cost is 100,000 plus 10 per square foot, not 100 per square foot. So:
+
+- Land: 100x
+- Panels: 250x
+- Maintenance: 100,000 + 10x
+
+Total cost for first year as a function of x (sq ft):
+C(x) = 100x + 250x + (100,000 + 10x) = 360x + 100,000
+
+So the correct function is C(x) = 360x + 100,000, for x ≥ 0. (Example: x = 1000 → C = 360,000 + 100,000 = 460,000.)
+Question:
+```
+I'm building a solar power installation and I need help working out the financials. 
+- Land costs $100 / square foot
+- I can buy solar panels for $250 / square foot
+- I negotiated a contract for maintenance that will cost me a flat $100k per year, and an additional $10 / square foot
+What is the total cost for the first year of operations as a function of the number of square feet.
+``` 
+Student's solution:
+```
+Let x be the size of the installation in square feet.
+Costs:
+1. Land cost: 100x
+2. Solar panel cost: 250x
+3. Maintenance cost: 100,000 + 100x
+Total cost: 100x + 250x + 100,000 + 100x = 450x + 100,000
+```
+Actual solution:
+```
+steps to work out the solution and your solution here
+```
+Is the student's solution the same as actual solution just calculated:
+```
+yes or no
+```
+Student grade:
+```
+correct or incorrect
+```
+
+Actual solution:
+```
+Let x be the size of the installation in square feet.
+Costs:
+- Land: 100x
+- Solar panels: 250x
+- Maintenance: 100,000 (flat) + 10x (per square foot)
+
+Total cost = 100x + 250x + 100,000 + 10x
+           = (100 + 250 + 10)x + 100,000
+           = 360x + 100,000
+
+Therefore, the total cost for the first year as a function of square feet x is: C(x) = 360x + 100,000.
+```
+
+Is the student's solution the same as actual solution just calculated:
+```
+no
+```
+
+Student grade:
+```
+incorrect
+```
+Here’s a concise overview of the AeroGlide UltraSlim Smart Toothbrush from Boie:
+
+What it is
+- A premium, sonic electric toothbrush designed with an unusually slim, ergonomic handle for comfortable use and easy reach in the mouth.
+- Brand: Boie, known for design-forward dental care products.
+
+Design and feel
+- Ultra-slim handle aimed at a sleeker, more comfortable grip.
+- Replaceable brush heads designed to work with the slim head and sonic cleaning action.
+- Built to be used in a bathroom environment with water resistance appropriate for everyday use.
+
+Cleaning technology
+- Uses sonic brushing action (high-frequency bristle movements) to help clean along the gum line and between teeth.
+- Typically marketed with multiple cleaning modes to tailor the brushing experience (for example, standard cleaning, whitening or gum-care variants). Exact mode names and availability can vary by region.
+
+Smart features
+- Bluetooth connectivity to a companion app.
+- App-based coaching and tracking: brushing duration, coverage, and feedback to help improve brushing technique over time.
+- Real-time coaching cues and progress reports through the app, plus reminders or goals for consistent brushing.
+
+Battery and charging
+- Designed for daily use with a rechargeable battery.
+- Charging method is commonly a magnetic or docking charger in premium Boie models (exact charging setup can vary by region).
+- Battery life per charge is designed to last through many brushing sessions, but exact days/weeks depend on usage and model variant.
+
+Who it’s for
+- For anyone who wants a slim, easy-to-grip handle and appreciates smart features that track and coach brushing.
+- Also appealing to tech-minded users who like app-based feedback and progress tracking.
+- Travelers or daily commuters who prefer a compact, stylish design.
+
+What to consider
+- Availability and exact specs can vary by region, so check the exact feature list on Boie’s official product page for your country.
+- Replacement brush heads and their cost; ensure compatible heads are readily available.
+- App compatibility (iOS/Android) and data privacy settings.
+- Price relative to other premium sonic toothbrushes you’re considering.
+
+Would you like me to pull the latest official specs, current price, or compare the AeroGlide UltraSlim to specific models (e.g., another Boie model or a competing brand like Philips Sonicare or Oral-B)? If you tell me your region, I can tailor the details to what’s available there.

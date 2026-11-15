@@ -4,12 +4,18 @@ Rules for every document in `study_docs_qa/`. The goal is a consistent, fast-ref
 
 ---
 
-## 1. Files
+## 1. Files and placement
 
-- Group related courses into numbered topic folders: `NN_topic_slug/` (e.g., `01_orientation/`).
-- Use one Markdown file per course, or one file per section when a course is split across parts: `NN_section_slug.md`.
-- Filename: lowercase `snake_case` derived from the course or section title, ending in `.md`. Use a two-digit numeric prefix for ordering (e.g., `01_ai_for_everyone.md`).
-- Current layout: `00_ai_coding_crash_course/` holds one file per course section; `01_orientation/` and `02_llm_literacy/` hold one file per course.
+- Write each new `.md` file at the exact path the user names.
+- The user owns the folder tree. Do not create folders under `study_docs_qa/`. If a named folder does not exist, stop and ask.
+- If the user names `study_docs_qa/` with no subfolder, write the file in that directory (e.g., `study_docs_qa/core_ai_concepts.md`).
+- One Markdown file per course, or one file per section when a course is split across parts.
+- Filename: lowercase `snake_case` derived from the course or section title, ending in `.md`. Add a numeric prefix (`01_`, `02_`, …) only when the user asks for one.
+- Existing layout (do not extend it on your own):
+  - `study_docs_qa/` — `RULES.md` and standalone files such as `core_ai_concepts.md`
+  - `00_ai_coding_crash_course/` — one file per course section
+  - `01_orientation/` — one file per course
+  - `02_llm_literacy/` — one file per course
 - Plain Markdown only: no front matter, no HTML, no generated TOCs.
 - UTF-8, LF line endings, final newline.
 
@@ -48,7 +54,6 @@ Every content block is a question/answer pair:
 
 ```markdown
 **Q: Short, direct question?**
-
 A: Direct answer in one to three sentences.
 ```
 
@@ -110,7 +115,8 @@ A: Direct answer in one to three sentences.
 
 ## 8. Quality Checklist
 
-- [ ] File sits in a numbered `NN_topic_slug/` folder and uses a lowercase `snake_case` filename with an optional numeric prefix.
+- [ ] File is at the path the user named; no new folder was created.
+- [ ] Filename is lowercase `snake_case`.md; numeric prefix only if the user asked.
 - [ ] One H1 in the form `# Course Title — Q&A`, or `# Course Title — Section — Q&A` for a split course.
 - [ ] Intro and bold syllabus-flow line present.
 - [ ] Structure mirrors the official course outline.
@@ -143,11 +149,9 @@ Fast-reference notes for INSTRUCTOR's *COURSE TITLE* (PUBLISHER).
 ### SUBTOPIC
 
 **Q: Question?**
-
 A: Direct answer.
 
 **Q: Question?**
-
 A: Direct answer with `inline code` and a **key term**.
 
 ---
@@ -157,7 +161,6 @@ A: Direct answer with `inline code` and a **key term**.
 ### SUBTOPIC
 
 **Q: Question?**
-
 A: Direct answer.
 
 ---
