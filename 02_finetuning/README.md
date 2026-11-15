@@ -23,7 +23,7 @@ to every Python folder in this repository.
 ## Project layout
 
 ```
-finetuning/
+02_finetuning/
 ├── .venv/                        # local virtual environment (not committed)
 ├── __pycache__/                  # compiled bytecode (not committed)
 ├── README.md
@@ -43,7 +43,7 @@ this folder), so every script in the repository shares it:
 ```
 ai-engineer-roadmap/
 ├── .env                          # real credentials (not committed)
-└── finetuning/
+└── 02_finetuning/
     └── 01_finetuned_vs_non_finetuned.py
 ```
 
@@ -62,7 +62,7 @@ python3 --version
 If it reports 3.11.x or 3.12.x, use it directly:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/finetuning
+cd ~/code/ai-engineer-roadmap/02_finetuning
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -75,7 +75,7 @@ Python:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 export PATH="$HOME/.local/bin:$PATH"
 
-cd ~/code/ai-engineer-roadmap/finetuning
+cd ~/code/ai-engineer-roadmap/02_finetuning
 uv venv --python 3.12 .venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
@@ -86,7 +86,7 @@ uv pip install -r requirements.txt
 
 ### What each step does
 
-**`cd ~/code/ai-engineer-roadmap/finetuning`** moves into the folder that
+**`cd ~/code/ai-engineer-roadmap/02_finetuning`** moves into the folder that
 contains the script. The environment is created here, next to the code it is
 used for.
 
@@ -163,7 +163,7 @@ set to `none`.
 Every time you open a **new terminal**, activate the environment first:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/finetuning
+cd ~/code/ai-engineer-roadmap/02_finetuning
 source .venv/bin/activate
 
 # Requires valid Lamini credentials in the repository-root .env
@@ -190,7 +190,7 @@ of your prompt. To check which Python is being used:
 which python
 ```
 
-It should print a path inside `finetuning/.venv/bin/`.
+It should print a path inside `02_finetuning/.venv/bin/`.
 
 ## When you are done
 
@@ -206,7 +206,7 @@ environment or uninstall anything, so you can activate it again later.
 You do **not** need to reinstall anything:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/finetuning
+cd ~/code/ai-engineer-roadmap/02_finetuning
 source .venv/bin/activate
 python 02_finetuning_data.py
 python 03_data_preparation.py
@@ -262,7 +262,7 @@ it is the record of what must be installed.
 To install (or reinstall) everything into an activated environment:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/finetuning
+cd ~/code/ai-engineer-roadmap/02_finetuning
 source .venv/bin/activate
 pip install -r requirements.txt
 # or: uv pip install -r requirements.txt

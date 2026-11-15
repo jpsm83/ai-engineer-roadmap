@@ -20,7 +20,7 @@ ai-engineer-roadmap/
 ├── .gitignore
 ├── README.md
 ├── PYTHON_REFERENCE.md       # this file
-└── attention_transformers/
+└── 01_attention_transformers/
     ├── .venv/                # created with `python3 -m venv .venv`
     ├── __pycache__/          # created automatically by Python
     ├── README.md
@@ -99,7 +99,7 @@ home = /usr/bin
 include-system-site-packages = false
 version = 3.14.4
 executable = /usr/bin/python3.14
-command = /usr/bin/python3 -m venv /home/.../attention_transformers/.venv
+command = /usr/bin/python3 -m venv /home/.../01_attention_transformers/.venv
 ```
 
 It records which base Python the environment was created from and whether
@@ -127,7 +127,7 @@ Benefits:
 From the folder that contains the project code:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 python3 -m venv .venv
 ```
 
@@ -265,9 +265,11 @@ Multiple environments can exist at the same time without conflict:
 
 ```
 ai-engineer-roadmap/
-├── attention_transformers/
+├── 01_attention_transformers/
 │   └── .venv/
-└── another-project/
+├── 02_finetuning/
+│   └── .venv/
+└── 03_prompting_for_developers/
     └── .venv/
 ```
 
@@ -275,7 +277,7 @@ Only one can be active in a terminal at a time. To switch:
 
 ```bash
 deactivate
-cd ~/code/ai-engineer-roadmap/another-project
+cd ~/code/ai-engineer-roadmap/02_finetuning
 source .venv/bin/activate
 ```
 
@@ -291,7 +293,7 @@ Do **not** move or rename a virtual environment. Its `activate` script and
 `pip` script contain absolute paths from creation time, for example:
 
 ```
-/home/.../attention_transformers/.venv/bin/python3
+/home/.../01_attention_transformers/.venv/bin/python3
 ```
 
 After moving the folder, those paths are wrong. The reliable fix is to delete
@@ -417,7 +419,7 @@ and transitive versions.
 Python does not give every folder its own libraries. A package goes into the
 environment whose `python` or `pip` you used:
 
-- Activate `finetuning/.venv`, then `pip install ...` installs into that
+- Activate `02_finetuning/.venv`, then `pip install ...` installs into that
   environment only.
 - With no environment active, `pip install ...` targets the system Python (or
   fails if the system marks itself externally managed).

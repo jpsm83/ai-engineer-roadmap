@@ -18,7 +18,7 @@ to every Python folder in this repository.
 ## Project layout
 
 ```
-attention_transformers/
+01_attention_transformers/
 ├── .venv/                        # local virtual environment (not committed)
 ├── __pycache__/                  # compiled bytecode (not committed)
 ├── README.md
@@ -37,7 +37,7 @@ repository root `.gitignore` ignores every `.venv/`, `venv/`, `env/`, and
 Open a terminal and run these commands from the repository root:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -55,7 +55,7 @@ not need CUDA.
 
 ### What each step does
 
-**`cd ~/code/ai-engineer-roadmap/attention_transformers`** moves into the
+**`cd ~/code/ai-engineer-roadmap/01_attention_transformers`** moves into the
 folder that contains the example scripts. The environment is created here, next
 to the code it is used for.
 
@@ -81,14 +81,14 @@ and its dependencies) into `.venv/lib/.../site-packages`. They are not installed
 globally, so they are only available while the environment is activated.
 
 > Use `pwd` to check the current directory and `cd` to move around. All
-> commands below assume you are inside `attention_transformers/`.
+> commands below assume you are inside `01_attention_transformers/`.
 
 ## Running the examples
 
 Every time you open a **new terminal**, activate the environment first:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 source .venv/bin/activate
 python self_attention.py
 python masked_self_attention.py
@@ -102,7 +102,7 @@ of your prompt. You can also check which Python is being used:
 which python
 ```
 
-It should print a path inside `attention_transformers/.venv/bin/`.
+It should print a path inside `01_attention_transformers/.venv/bin/`.
 
 ## How the mask works
 
@@ -177,7 +177,7 @@ When you want to run the examples again, you do **not** need to reinstall
 anything:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 source .venv/bin/activate
 python self_attention.py
 python masked_self_attention.py
@@ -188,7 +188,7 @@ deactivate
 To check that PyTorch is installed inside the environment:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 source .venv/bin/activate
 python -c "import torch; print(torch.__version__)"
 ```
@@ -239,7 +239,7 @@ it is the record of what must be installed.
 To install (or reinstall) everything into an activated environment:
 
 ```bash
-cd ~/code/ai-engineer-roadmap/attention_transformers
+cd ~/code/ai-engineer-roadmap/01_attention_transformers
 source .venv/bin/activate
 pip install -r requirements.txt
 ```

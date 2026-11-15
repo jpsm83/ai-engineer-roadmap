@@ -16,6 +16,7 @@ Rules for every document in `study_docs_qa/`. The goal is a consistent, fast-ref
   - `00_ai_coding_crash_course/` — one file per course section
   - `01_orientation/` — one file per course
   - `02_llm_literacy/` — one file per course
+  - `03_prompting_and_integration/` — one file per course
 - Plain Markdown only: no front matter, no HTML, no generated TOCs.
 - UTF-8, LF line endings, final newline.
 
