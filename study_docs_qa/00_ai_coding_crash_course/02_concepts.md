@@ -1,18 +1,12 @@
-# AI Coding Crash Course — Concepts — Q&A
-
-Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
-**Models, Harnesses, Agents, Environments → Non-Determinism → Turns and Model Provider Requests → Sessions and the Context → Smart Zone / Dumb Zone → Statelessness → How Much Did It Cost? → Hallucination → Effort → Choosing a Model → Subagents.**
-
----
-
-## Part 2 — Concepts
-
 ### Models, Harnesses, Agents, Environments
 
 **Q: What is a model?**
 A: The **parameters** — the frozen numbers produced by training. A model is stateless and does only **next-token prediction**: tokens in, one likely next token out, repeated.
 
 **Q: What is a harness?**
+
+![Harness](../../images/harness.webp)
+
 A: Everything around the model that turns it into an agent: tools, the **system prompt**, context-window management, permissions, and the loop that executes tool calls.
 
 **Q: What is an agent?**
@@ -88,6 +82,8 @@ A: The early part of a session where the agent is sharp, focused, and good at re
 
 **Q: What is the dumb zone?**
 A: The later part of a session where quality has degraded: the agent forgets constraints, repeats mistakes, and hallucinates more. On frontier models it often begins around 125K to 150K tokens.
+
+![Dumb zone](../../images/dumb_zone.webp)
 
 **Q: What causes the dumb zone?**
 A: **Attention degradation**. Each token has a finite **attention budget**, and as the context grows, the budget is spread across more competitors, so the signal on what matters gets thinner.

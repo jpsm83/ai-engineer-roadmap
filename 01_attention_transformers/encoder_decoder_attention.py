@@ -155,7 +155,7 @@ multiHeadAttention1 = MultiHeadAttention(d_model=2,
                                          row_dim=0,
                                          col_dim=1,
                                          num_heads=1)
-
+                                        
 ## calculate encoder-decoder attention
 print("multi-head attention output (1 head):\n",
       multiHeadAttention1(encodings_for_q,
