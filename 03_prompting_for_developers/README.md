@@ -2,11 +2,27 @@
 
 This folder holds the coding examples for *ChatGPT Prompt Engineering for
 Developers* (DeepLearning.AI / OpenAI). The scripts keep the course's
-`openai.ChatCompletion.create` helper and prompt text.
+`openai.ChatCompletion.create` helper and prompt text, one file per lesson
+with a notebook:
 
-- `01_guidelines.py` — first lesson: write clear instructions (delimiters,
-  structured output, conditionals, few-shot) and give the model time to think.
-  Calls `gpt-5-nano` and prints each completion.
+- `01_guidelines.py` — clear instructions (delimiters, structured output,
+  conditionals, few-shot) and giving the model time to think.
+- `02_iterative.py` — iterative prompt development: marketing copy from a
+  product fact sheet, then length, audience, IDs, and an HTML dimensions table.
+- `03_summarizing.py` — summaries with a word limit, a topic focus, extract
+  instead of summarize, and a loop over several reviews.
+- `04_inferring.py` — sentiment, emotions, entity extraction, multi-field JSON,
+  topic lists, and a zero-shot topic alert.
+- `05_transforming.py` — translation, tone, format conversion, and proofreading
+  (including a `redlines` diff).
+- `06_expanding.py` — a sentiment-conditioned customer email; temperature
+  controls how varied the reply is.
+- `07_chatbot.py` — chat-completions roles (`system` / `user` / `assistant`),
+  conversation context, and a Panel OrderBot UI that can emit a JSON order
+  summary.
+
+Fast-reference Q&A for the same course:
+[study_docs_qa/03_prompting_and_integration/02_chatgpt_prompt_engineering_for_developers.md](../study_docs_qa/03_prompting_and_integration/02_chatgpt_prompt_engineering_for_developers.md).
 
 For a beginner-friendly study reference about `.venv/`, `__pycache__/`, and
 the `__init__` method, see
@@ -21,7 +37,13 @@ to every Python folder in this repository.
 ├── __pycache__/                  # compiled bytecode, if Python created it (not committed)
 ├── README.md
 ├── requirements.txt              # pinned dependencies for this folder
-└── 01_guidelines.py
+├── 01_guidelines.py
+├── 02_iterative.py
+├── 03_summarizing.py
+├── 04_inferring.py
+├── 05_transforming.py
+├── 06_expanding.py
+└── 07_chatbot.py
 ```
 
 Each folder that has its own Python code can have its own `.venv/`. The
@@ -58,7 +80,7 @@ pip install -r requirements.txt
 ### What each step does
 
 **`cd ~/code/ai-engineer-roadmap/03_prompting_for_developers`** moves into the
-folder that contains the script. The environment is created here, next to the
+folder that contains the scripts. The environment is created here, next to the
 code it is used for.
 
 **`python3 -m venv .venv`** creates a self-contained virtual environment in
@@ -74,6 +96,11 @@ You will usually see `(.venv)` in your prompt.
 - `openai==0.28.1` — the course client. This version still has
   `openai.ChatCompletion.create`. `openai` 1.x replaced that API.
 - `python-dotenv==1.2.4` — loads `OPENAI_API_KEY` from `.env`.
+- `ipython==9.18.1` — `IPython.display` used by the iterative and transforming
+  scripts to render HTML or Markdown.
+- `redlines==0.6.2` — word-level diffs in `05_transforming.py`.
+- `typing_extensions==4.16.0` — required by `redlines` on this Python version.
+- `panel==1.10.0` — local web UI for `07_chatbot.py`.
 
 `requirements.txt` is the Python equivalent of `package.json` in a Node
 project: it records the exact versions this folder needs, so the environment can
@@ -84,7 +111,7 @@ be recreated elsewhere.
 
 ## Credentials: keep them secret
 
-The script reads one environment variable:
+The scripts read one environment variable:
 
 - `OPENAI_API_KEY`
 
@@ -109,9 +136,9 @@ Rules for this file:
 - `.env` is listed in the repository-root `.gitignore`, so Git ignores it.
 - There is no committed template: never put real keys in a tracked file.
 - If you ever commit a key by accident, rotate it immediately in OpenAI.
-- The script loads `.env` with `load_dotenv(find_dotenv())`, which walks up
-  from the current working directory. Run the script from this folder or
-  elsewhere inside the repository so it can find the root `.env`.
+- The scripts load `.env` with `load_dotenv(find_dotenv())`, which walks up
+  from the current working directory. Run them from this folder or
+  elsewhere inside the repository so they can find the root `.env`.
 
 ## Running the scripts
 
@@ -120,12 +147,28 @@ Every time you open a **new terminal**, activate the environment first:
 ```bash
 cd ~/code/ai-engineer-roadmap/03_prompting_for_developers
 source .venv/bin/activate
+
 python 01_guidelines.py
+python 02_iterative.py
+python 03_summarizing.py
+python 04_inferring.py
+python 05_transforming.py
+python 06_expanding.py
+python 07_chatbot.py
 ```
 
-The script makes several live API calls and prints each completion. You can
-tell the environment is active because `(.venv)` appears at the start of your
-prompt. To check which Python is being used:
+`01`–`06` print completions to the terminal. Each file may have extra
+examples commented out; uncomment one block at a time if you want to replay a
+specific prompt.
+
+`07_chatbot.py` starts a local Panel server and opens a browser (OrderBot).
+Chat there, then stop the server (Ctrl+C in the terminal). After that, the
+script prints a JSON summary of the order collected in `context`. In a
+notebook a bare `dashboard` is enough to render; from a `.py` file the script
+calls `dashboard.show()`.
+
+You can tell the environment is active because `(.venv)` appears at the start of
+your prompt. To check which Python is being used:
 
 ```bash
 which python
@@ -174,15 +217,20 @@ deactivate
 - Activation is per terminal. A new terminal starts with the system Python, so
   activate the environment again.
 
-## Course notes that differ from the original notebook
+## Course notes that differ from the original notebooks
 
-The notebook wraps long strings with `\` at the end of the line. A space after
-that backslash (`\ `) is an invalid escape on Python 3.14. The `.py` file keeps
-the course wraps but ends those lines with `\` and no trailing space.
+The notebooks wrap long strings with `\` at the end of the line. A space after
+that backslash (`\ `) is an invalid escape on Python 3.14. The `.py` files keep
+the course wraps but end those lines with `\` and no trailing space.
 
-The notebook used `model="gpt-3.5-turbo"` and `temperature=0`. This folder
+The notebooks used `model="gpt-3.5-turbo"` and `temperature=0`. This folder
 calls `gpt-5-nano`. That model only allows the default temperature (`1`), so
-`temperature=0` is commented out in `get_completion`.
+`temperature=0` is commented out in most `get_completion` helpers. Scripts that
+still pass `temperature` (`06_expanding.py`, `07_chatbot.py`) use `1`.
+
+`02_iterative.py` and `05_transforming.py` import `IPython.display`. In a
+notebook that renders HTML; from the terminal you still get the text (and
+sometimes raw markup). That is expected.
 
 ## Troubleshooting
 
@@ -192,16 +240,22 @@ calls `gpt-5-nano`. That model only allows the default temperature (`1`), so
 - `ModuleNotFoundError: No module named 'dotenv'`: install with
   `pip install python-dotenv` inside the activated environment, or
   `pip install -r requirements.txt`.
+- `ModuleNotFoundError: No module named 'IPython'` / `'redlines'` / `'panel'`:
+  install with `pip install -r requirements.txt` inside the activated
+  environment.
 - `AttributeError: module 'openai' has no attribute 'ChatCompletion'`: you
   have `openai` 1.x. This folder needs `openai==0.28.1`.
 - `SyntaxWarning: "\ " is an invalid escape sequence`: a course wrap still
   has a space after `\`. Remove that trailing space so the line ends with `\`.
-- `InvalidRequestError: 'temperature' does not support 0 with this model`:
-  `gpt-5-nano` rejects `temperature=0`. Leave that argument commented out.
+- `InvalidRequestError: 'temperature' does not support 0 with this model`
+  (or a value other than `1`): `gpt-5-nano` rejects non-default temperature.
+  Leave `temperature=0` commented out, or pass `1`.
 - `InvalidRequestError` / `AuthenticationError` / `401`: `OPENAI_API_KEY` is
   missing, empty, or wrong in the root `.env`.
 - Completions never print and there is no traceback: `find_dotenv()` did not
   find the root `.env`. `cd` into this folder (or the repo) and run again.
+- `07_chatbot.py` starts but no browser opens: look at the Panel URL printed
+  in the terminal (usually `http://localhost:5006`) and open it yourself.
 
 ## Managing dependencies
 
@@ -219,8 +273,8 @@ pip install -r requirements.txt
 
 If you add a package you intend to keep, add its pinned version to
 `requirements.txt` by hand. Prefer a short list of **direct** imports
-(`openai`, `python-dotenv`) over `pip freeze`, which also dumps transitive
-packages.
+(`openai`, `python-dotenv`, `ipython`, `redlines`, `panel`) over `pip freeze`,
+which also dumps transitive packages.
 
 Keep `openai==0.28.1`. Newer releases remove `ChatCompletion.create`, which
-this course script still uses.
+these course scripts still use.

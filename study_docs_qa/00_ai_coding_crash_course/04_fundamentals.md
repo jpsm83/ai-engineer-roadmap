@@ -88,7 +88,7 @@ A: If a grilling session hits something you do not understand, hand off to a tea
 **Q: What is the feature-building loop?**
 A: Explore the relevant code, agree on the approach, implement in small steps, run the checks, and review the diff. The loop repeats until the feature is done and verified.
 
-**Q: Why small steps?**
+**Q: Why build a feature in small steps?**
 A: Each step is easier to review and easier to revert. A large change hides mistakes, fills the context with tool results, and makes it hard to tell which decision caused a failure.
 
 **Q: What should the agent do before editing?**
@@ -100,7 +100,7 @@ A: Run the automated checks, exercise the behaviour, and read the diff. Passing 
 **Q: What is the most common feature-building mistake?**
 A: Letting the agent build the whole feature in one turn without a checkpoint. The context fills, the review becomes impossible, and the first real inspection happens after the mess is complete.
 
-### Why Plan Mode Sucks
+### Plan mode
 
 **Q: What is plan mode?**
 A: An **agent mode** that blocks edits and steers the agent toward research and planning. It is useful for reading and proposing, but it is not a substitute for a real design conversation.

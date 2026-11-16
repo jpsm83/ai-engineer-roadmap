@@ -12,11 +12,11 @@ Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
 **Q: What is the core idea of the course?**
 A: Learn how the **model** works, how the **harness** works, and how to combine both into a repeatable software engineering loop. The goal is control and predictable quality, not faster prompting.
 
-**Q: What does "this isn't a vibe coding course" mean?**
-A: You are expected to read diffs, understand the code, and enforce standards. **Vibe coding** accepts agent output without human review; this course teaches the opposite habit.
+**Q: What is vibe coding, and why reject it?**
+A: **Vibe coding** accepts agent output without human review. You are expected to read diffs, understand the code, and enforce standards — the opposite habit.
 
-**Q: What will you build during the course?**
-A: A full-stack exercise repo that works like a mini Udemy: React Router, TypeScript, SQLite, and Drizzle ORM. You explore, extend, and refactor it with Claude Code.
+**Q: What stack does the exercise repo use?**
+A: A full-stack app with React Router, TypeScript, SQLite, and Drizzle ORM. You explore, extend, and refactor it with Claude Code.
 
 **Q: How is the course organized?**
 A: Six sections and nearly 60 lessons. Each lesson has a video, a written guide, prompts to adapt, and quizzes; code lessons have checkpoint commits you can reset to.

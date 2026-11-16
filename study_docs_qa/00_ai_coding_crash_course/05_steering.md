@@ -150,9 +150,9 @@ A: The starting context is smaller, the agent follows the remaining rules more r
 **Q: What is the connection between pruning and memory?**
 A: Memory systems accumulate facts, and stale memories are loaded with the same confidence as current ones. A memory system needs pruning for the same reasons `AGENTS.md` does.
 
-### Trying Out Pruning
+### Pruning in practice
 
-**Q: What is a practical pruning exercise?**
+**Q: How do you prune an instruction file in practice?**
 A: Take `AGENTS.md` or `CLAUDE.md`, mark each line as always true, task-specific, or derivable, then move the task-specific lines into skills and delete the derivable ones.
 
 **Q: How do you measure the before and after?**

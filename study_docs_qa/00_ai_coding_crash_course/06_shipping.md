@@ -32,7 +32,7 @@ A: A real tracker such as GitHub or Linear, or local Markdown files under a scra
 **Q: What is a blocking edge?**
 A: A dependency between tickets: ticket B cannot start until ticket A is done. The set of tickets with no open blockers is the **frontier**, and that is what can run now.
 
-### Write Great Specs With This Skill
+### Specs
 
 **Q: What is a spec?**
 A: A **handoff artifact** describing a multi-session piece of work: what is being built, the constraints, the decisions made so far, and the tickets with their status.
@@ -63,7 +63,7 @@ A: It must fit in one fresh context window and one session. If sessions routinel
 **Q: What is a tracer bullet?**
 A: A narrow but complete vertical slice through every layer of the change: schema, API, UI, and tests. It can be demoed on its own as soon as it lands.
 
-**Q: Why not slice by layer?**
+**Q: Why should tickets not be sliced by layer?**
 A: A horizontal slice ships nothing until every layer lands, and each ticket's acceptance criteria reach into work another ticket owns. That produces integration pain and rework.
 
 **Q: How do you order the tickets?**
@@ -89,7 +89,7 @@ A: Each ticket gets the sharpest part of a context window. The previous ticket's
 **Q: What should the agent do first?**
 A: Read the ticket and its context pointers, then confirm the acceptance criteria and the tests that will prove them. It should not start editing before it understands the target.
 
-**Q: How does TDD fit in?**
+**Q: How does TDD fit ticket execution?**
 A: Write a failing test at the agreed seam, make it pass, then refactor. The red-green loop gives the agent deterministic feedback and gives you evidence that the behaviour exists.
 
 **Q: What is the review checkpoint?**
@@ -100,13 +100,13 @@ A: Read the diff before merging, not just the agent's summary. Automated checks 
 **Q: Should a spec be kept forever?**
 A: No. It is a snapshot of what you knew when the work started, and it goes stale as implementation teaches you more. Treat it as disposable after the work ships.
 
-**Q: What should survive instead?**
+**Q: What should survive after a spec is discarded?**
 A: Durable decisions belong in ADRs, a glossary, or project documentation. The spec records one effort; those files record knowledge that outlives it.
 
 **Q: Why do tickets get deleted or closed?**
 A: They are disposable slices sized for one session. Once the work lands, the ticket has served its purpose; keeping it adds maintenance without adding value.
 
-**Q: Why does this matter for agents?**
+**Q: Why does stale spec hygiene matter for agents?**
 A: Agents trust the documents you give them. A stale spec is a confident false premise, and the next session will build on it unless you mark or remove it.
 
 ### Rerouting: When the Destination Changes
@@ -174,7 +174,7 @@ A: Two tickets can touch the same file or pick different names for the same conc
 **Q: What is the common false signal in worktrees?**
 A: A test can silently skip because a gitignored fixture, local database, or credential is missing from the worktree. Verify the test actually ran, not just that the suite was green.
 
-### Ask Matt
+### Choosing a workflow
 
 **Q: What is `/ask-matt`?**
 A: A router skill that helps you choose the right workflow or skill for the situation. It is useful when you know the goal but not whether to grill, spec, ticket, implement, or review.
@@ -199,7 +199,7 @@ A: Start with a well-specified, low-risk ticket, a sandbox, a permissive permiss
 **Q: What is the durable skill from the course?**
 A: The loop: understand the model and harness, curate context, grill the requirements, split the work, verify mechanically, and review the result. The tools change; the loop transfers.
 
-### More Exercises
+### Further practice
 
 **Q: How can you reuse the course exercises?**
 A: Reset to a checkpoint, rebuild the lesson without looking at the solution, then cherry-pick the solution and compare. The gap between your attempt and the solution is the lesson.

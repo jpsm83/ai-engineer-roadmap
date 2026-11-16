@@ -33,7 +33,7 @@ A: A layer converting tokens (words, word parts, symbols) into numeric vectors, 
 A: Random numbers make similar words unrelated. Training on next-word prediction clusters words used in similar contexts (e.g., "great"/"awesome"); multiple numbers capture different senses (sincere vs. sarcastic "great"). The learned input-to-activation weights *are* the embeddings.
 
 **Q: Why does context length matter, and what fixes word order?**
-A: Predicting from one preceding word gives little context; using ~4 preceding words improves embeddings but still ignores order ("Squatch eats pizza" vs. "Pizza eats Squatch"). **Positional encoding** injects position information so order matters.
+A: Predicting from one preceding word gives little context; using several preceding words helps but still ignores order (who ate whom). **Positional encoding** injects position information so order matters.
 
 **Q: What is a context-aware (contextualized) embedding?**
 A: The post-attention representation reflecting relationships with other tokens. Unlike word embeddings, these cluster similar sentences and documents; used for clustering, semantic search, and classifiers (neural nets or logistic regression).
@@ -43,10 +43,10 @@ A: The post-attention representation reflecting relationships with other tokens.
 ## Part 2 — Self-Attention
 
 **Q: What is self-attention?**
-A: Attention where Q, K, and V all come from the same sequence. It computes similarity between every word and all others — including later words — then builds new representations. Example: in "The pizza came out of the oven and it tasted good," attention links "it" to "pizza".
+A: Attention where Q, K, and V all come from the same sequence. It computes similarity between every token and all others — including later tokens — then builds new representations, so a pronoun can attach to the noun it refers to.
 
-**Q: Where do Query, Key, Value come from?**
-A: Database search: **query** = search term; **keys** = records compared against it; **value** = returned result (e.g., room number).
+**Q: What are Query, Key, and Value?**
+A: An analogy from search: the **query** is the search term, **keys** are the records compared against it, and the **value** is what you get back for a match.
 
 **Q: What is the equation, step by step?**
 A: `Attention(Q,K,V) = softmax(QKᵀ / √d_k) · V`
@@ -67,20 +67,20 @@ A: The sum of element-wise products. It is an unscaled similarity measure, close
 A: Large dimensions produce large dot products, making softmax too sharp and hurting training. The authors reported better performance; simple √d_k scaling is not a systematic normalization.
 
 **Q: What does the softmax do?**
-A: Converts each row of scaled similarities into positive weights summing to 1 — the % influence each token has on a given token (e.g., "write" 36% self, 40% "a", 24% "poem").
+A: Converts each row of scaled similarities into positive weights summing to 1 — the share of influence each token has on a given token.
 
 **Q: Why multiply the weights by V?**
 A: The weights say how much each token contributes; multiplying and summing gives a weighted average of values.
 
-**Q: The equation in one line?**
+**Q: How can you summarize the attention equation?**
 A: Scaled dot-product similarities → softmax percentages → scale and combine the values.
 
 ---
 
 ## Part 3 — Masked Self-Attention
 
-**Q: Self-attention vs. masked self-attention?**
-A: Self-attention sees words before **and after** the current word. Masked self-attention ignores everything after it.
+**Q: How does self-attention differ from masked self-attention?**
+A: Self-attention sees tokens before **and after** the current token. Masked self-attention ignores everything after it.
 
 **Q: How does the math change?**
 A: Only the mask matrix `M` is added: `softmax(QKᵀ/√d_k + M) · V`. Q, K, V are computed identically.
@@ -91,20 +91,20 @@ A: `0` for allowed positions, `-∞` for hidden ones. Adding 0 changes nothing; 
 **Q: Why `-∞` instead of zero?**
 A: Zeroing a score before softmax still leaves it with probability after normalization. `-∞` guarantees exactly 0%.
 
-**Q: Mask for "Write a poem"?**
-A: Lower-triangular: "write" → itself; "a" → "write", "a"; "poem" → all three.
+**Q: What does a causal mask look like?**
+A: Lower-triangular: token 1 attends only to itself; token 2 to the first two; token 3 to all three, and so on.
 
 **Q: How is the mask built in PyTorch?**
 A: `mask = (torch.tril(torch.ones(n, n)) == 0)` gives a boolean upper-triangular mask; apply `scaled.masked_fill(mask, float('-inf'))` before softmax.
 
-**Q: Encoder-only transformer?**
-A: Uses only self-attention; produces context-aware embeddings for clustering, search, and classification. BERT is the example.
+**Q: What is an encoder-only transformer?**
+A: It uses only self-attention and produces context-aware embeddings for clustering, search, and classification. BERT is the main example.
 
-**Q: Decoder-only transformer?**
-A: Uses only masked self-attention; trained to predict the next token; produces generative inputs for new tokens. GPT/ChatGPT are examples.
+**Q: What is a decoder-only transformer?**
+A: It uses only masked self-attention, is trained to predict the next token, and generates new tokens one at a time. GPT-style models are the main examples.
 
-**Q: Why can decoder-only models generate?**
-A: Training shows a prefix (e.g., up to "it") and updates weights until the continuation ("tasted good") is produced. Inference generates one token at a time, feeding each output back as context.
+**Q: Why can decoder-only models generate text?**
+A: Training shows a prefix and updates weights until a likely continuation is produced. Inference generates one token at a time, feeding each output back as context.
 
 **Q: Why is masking essential for generation?**
 A: Without it, the model would copy future tokens instead of learning to predict them. At generation time only the past exists.
@@ -134,26 +134,26 @@ A: Multiple attention heads run in parallel, each with its own `W_q`, `W_k`, `W_
 **Q: Why multiple heads?**
 A: One attention pattern cannot capture all relationships. Heads can specialize (syntax, coreference, nearby context), giving a richer representation.
 
-**Q: 3 heads × 2 values — how return to 2?**
-A: You get 6 values; a fully connected layer with 2 outputs projects them down. Alternatively, make each head output fewer values (e.g., a one-column `W_v`).
+**Q: How does multi-head attention return to the original width?**
+A: Concatenating heads produces a wider vector; a linear layer projects it back to `d_model`. Alternatively, each head can output fewer values so the concat already matches.
 
-**Q: How is it coded?**
+**Q: How is multi-head attention coded?**
 A: One attention module per head; loop in `forward`, collect outputs, `torch.cat`, then an output `nn.Linear`.
 
 ---
 
 ## Part 5 — PyTorch Implementation
 
-**Q: Structure of the self-attention class?**
-A: Subclass `nn.Module`; `__init__` creates `W_q`, `W_k`, `W_v` as `nn.Linear`; `forward` computes Q/K/V and applies the equation.
+**Q: How is a self-attention module structured in PyTorch?**
+A: Subclass `nn.Module`; `__init__` creates `W_q`, `W_k`, `W_v` as `nn.Linear`; `forward` computes Q, K, and V and applies the equation.
 
 **Q: What is `d_model`?**
 A: Number of embedding values per token; sets weight-matrix size (d_model=2 → 2×2 matrices; 512+ typical). Only constraint: matrix math must be dimensionally valid.
 
-**Q: Why `bias=False`?**
+**Q: Why do the attention linear layers use `bias=False`?**
 A: The original Transformer adds no bias terms when computing attention.
 
-**Q: What does `forward` do?**
+**Q: What does the attention `forward` method compute?**
 A: `q = W_q(x)`, `k = W_k(x)`, `v = W_v(x)`; `similarities = q @ k.transpose(-2,-1)`; divide by `sqrt(d_k)`; softmax; return `attention_percents @ v`.
 
 ```python
@@ -174,17 +174,17 @@ class SelfAttention(nn.Module):
         return weights @ v
 ```
 
-**Q: Why the transpose symbol on the weights?**
+**Q: Why do PyTorch `nn.Linear` weights look transposed vs. the math?**
 A: PyTorch stores `nn.Linear` weights transposed relative to math notation; transpose `W_q.weight` to verify by hand.
 
-**Q: How do you verify correctness?**
-A: Print the weight matrices, compute Q/K/V manually (or call `W_q(x)`), and compare with the class output.
+**Q: How do you verify an attention implementation?**
+A: Print the weight matrices, compute Q, K, and V manually (or call `W_q(x)`), and compare with the class output.
 
 **Q: Why set a manual seed?**
 A: Weights are randomly initialized; `torch.manual_seed(...)` makes results reproducible.
 
-**Q: Are the weights trained?**
-A: No — the lessons implement only an attention class, not a full transformer. The tensors are set up so backpropagation could train them later.
+**Q: Does this attention class train the weights?**
+A: No — it implements only the attention math, not a full transformer. The tensors are set up so backpropagation could train them later.
 
 **Q: What changes for masked self-attention?**
 A: Same Q/K/V; `forward` also takes a mask and calls `scaled.masked_fill(mask, float('-inf'))` before softmax.
@@ -204,14 +204,14 @@ class MaskedSelfAttention(nn.Module):
         return F.softmax(scaled, dim=-1) @ v
 ```
 
-**Q: One class for all three attention types?**
-A: Either a mode switch or separate classes. The only differences: whether a mask is applied, and whether Q vs. K/V come from the same input (self) or different inputs (cross).
+**Q: Can one class implement all three attention types?**
+A: Yes, with a mode switch, or use separate classes. The only differences: whether a mask is applied, and whether Q vs. K/V come from the same input (self) or different inputs (cross).
 
 **Q: What happens with more heads?**
 A: More attention values per token; the final linear projection restores the desired dimension.
 
-**Q: Why use dimension 2 in the examples?**
-A: So the math can be verified by hand. The same code generalizes to 512.
+**Q: Why learn attention with a tiny embedding size?**
+A: So the matrix math can be checked by hand. The same code generalizes to typical sizes such as 512.
 
 ---
 

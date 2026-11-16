@@ -39,7 +39,7 @@ A: Prompt engineering → RAG → finetuning → pretraining, in increasing orde
 **Q: What is pretraining?**
 A: Training a model from scratch on massive general text to learn language and world patterns. It is enormously expensive and is not what this course teaches.
 
-**Q: Finetuning vs. pretraining?**
+**Q: How does finetuning differ from pretraining?**
 A: Pretraining starts from random weights on broad data; finetuning starts from a pretrained model on a smaller, targeted dataset. Finetuning reuses the model's existing language ability instead of rebuilding it.
 
 **Q: Why does starting from a pretrained model matter?**
@@ -48,7 +48,7 @@ A: The model already understands language, so you only teach the specific behavi
 **Q: Are RAG and finetuning mutually exclusive?**
 A: No — they are complementary. A common production pattern retrieves current facts with RAG and uses finetuning to enforce response style and format.
 
-**Q: Base model vs. instruction-tuned model?**
+**Q: Should you finetune a base model or an instruction-tuned model?**
 A: A base model only predicts the next token; an instruction-tuned model has already learned to follow directions. Finetuning usually starts from an instruction-tuned model so it builds on that behavior.
 
 ---
@@ -129,7 +129,7 @@ A: Learning rate, number of epochs, batch size, and sequence length, plus warmup
 **Q: What learning rate is appropriate?**
 A: A small learning rate relative to pretraining, so the model adapts without forgetting. Too high destabilizes training; too low barely changes behavior.
 
-**Q: How many epochs?**
+**Q: How many epochs should you train?**
 A: Start with a small number, often one to three. More epochs raise the risk of overfitting, especially with a small dataset.
 
 **Q: What is overfitting and how do you spot it?**
@@ -168,7 +168,7 @@ A: The best cheaper alternative — usually the same model with prompt engineeri
 **Q: How do you detect catastrophic forgetting?**
 A: Test the finetuned model on general tasks and held-out inputs, not just the target task. A drop in unrelated abilities means the update was too aggressive.
 
-**Q: How do you iterate?**
+**Q: How should you iterate after a finetuning run?**
 A: Improve the data first, then adjust hyperparameters, then consider a different model or LoRA settings. Data fixes usually beat hyperparameter tuning.
 
 **Q: When should you stop iterating?**
@@ -183,7 +183,7 @@ A: When the model reliably clears the evaluation bar on the test set and further
 **Q: How should a beginner start?**
 A: Pick one narrow, high-value task, gather a small clean dataset, and establish a baseline with prompting or RAG first. Then finetune and compare against that baseline.
 
-**Q: Managed service or self-hosted training?**
+**Q: When should you use a managed service vs. self-hosted training?**
 A: Managed platforms handle infrastructure and are faster to start; self-hosting gives control and can be cheaper at scale. Choose based on data sensitivity, budget, and team skills.
 
 **Q: What costs should you expect?**
