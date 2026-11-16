@@ -242,7 +242,7 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 
 **3.1 Prompt engineering**
 - [x] 💳 `AI Prompting for Everyone` (Andrew Ng) — 7h4m — from finding info to building apps.
-- [ ] ✅ `ChatGPT Prompt Engineering for Developers` (OpenAI) — ~1h — zero/few-shot, CoT, instruction refinement.
+- [x] ✅ `ChatGPT Prompt Engineering for Developers` (OpenAI) — ~1h — zero/few-shot, CoT, instruction refinement.
 - [ ] ✅ `Reasoning with o1` (OpenAI) — 1h44m — prompting reasoning models, sampling intuition.
 
 **3.2 LLM integration**

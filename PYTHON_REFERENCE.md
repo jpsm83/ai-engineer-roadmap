@@ -209,8 +209,8 @@ With the environment activated:
 pip install torch
 pip install torch --extra-index-url https://download.pytorch.org/whl/cpu
 pip install numpy
-pip list                    # show installed packages
-pip show torch              # details about one package
+pip list                    # show all installed packages (name + version)
+pip show torch              # details for one package, including Version:
 pip freeze                  # exact versions, useful for requirements.txt
 python self_attention.py
 ```
@@ -343,7 +343,25 @@ datasets==3.6.0
 transformers==4.46.3
 ```
 
-Recreate the environment's packages from it with:
+Install every package listed in that file with:
+
+```bash
+pip install -r requirements.txt
+```
+
+What this command does:
+
+- `pip` is the package installer for the **active** environment (check with
+  `which pip`; it should point inside `.venv`).
+- `install` downloads packages and puts them in `.venv/.../site-packages/`.
+- `-r` means **read** package names from a file instead of typing each one on
+  the command line (`pip install openai python-dotenv ...`).
+- `requirements.txt` is that file: one package per line, usually pinned
+  (`openai==0.28.1`).
+
+Use it after you create and activate a `.venv`, or when you clone the project
+on another machine and need the same libraries. Activate first so packages go
+into the environment, not the system Python:
 
 ```bash
 source .venv/bin/activate
@@ -382,11 +400,46 @@ uv sync        # recreates the environment from that lockfile
 
 `pip install` and `uv pip install` only change the environment. They do not edit
 `requirements.txt`. After installing a package you actually intend to keep, add
-the same pinned version to the file manually:
+the same pinned version to the file manually.
+
+Find that version with `pip show`:
 
 ```bash
-uv pip install --python .venv/bin/python "torch==2.9.0"
-# then add this line to requirements.txt: torch==2.9.0
+pip show ipython
+```
+
+What this command does:
+
+- `pip` is the package installer for the **active** environment.
+- `show` prints metadata for **one** package that is already installed.
+- `ipython` is the package name. Replace it with any library (`torch`,
+  `openai`, `python-dotenv`).
+
+Typical fields:
+
+- `Name:` the package name to write in `requirements.txt`
+- `Version:` the exact version to pin (`ipython==9.8.0`)
+- `Location:` where it was installed (should be inside `.venv`)
+- `Requires:` other packages this one pulled in (transitive dependencies)
+- `Required-by:` other installed packages that depend on this one
+
+If the package is not installed, pip prints `WARNING: Package(s) not found`.
+Install it first, then run `pip show` again.
+
+Workflow for a new direct dependency:
+
+```bash
+pip install ipython
+pip show ipython          # copy the Version: line
+# then add this line to requirements.txt: ipython==9.8.0
+```
+
+Use the version `pip show` printed, not the example number. `pip list` shows
+every installed package at once (name + version, no extra metadata). To read
+the version from inside Python instead:
+
+```bash
+python -c "import IPython; print(IPython.__version__)"
 ```
 
 ### `pip freeze` and its caveat
@@ -472,10 +525,12 @@ python -c "import sys; print(sys.prefix)"
 
 # Install and inspect
 pip install torch
+# Install every package listed in requirements.txt into the active .venv:
+pip install -r requirements.txt
 # or with uv, without activating:
 uv pip install --python .venv/bin/python torch
-pip list
-pip show torch
+pip list                    # all installed packages
+pip show ipython            # one package: copy Version: into requirements.txt
 
 # Record dependencies
 # Preferred: add only the direct dependency, pinned, by editing the file.
