@@ -1,10 +1,5 @@
 # Attention in Transformers: Concepts and Code in PyTorch — Q&A
 
-Fast-reference notes for Josh Starmer's *Attention in Transformers* (DeepLearning.AI / StatQuest).
-**Foundations → Self-Attention → Masked Self-Attention → Encoder-Decoder & Multi-Head → PyTorch.**
-
----
-
 ## Part 1 — Foundations
 
 ### Attention and Transformers
@@ -252,5 +247,3 @@ A: So the matrix math can be checked by hand. The same code generalizes to typic
 - **Multi-head:** `Concat(head₁ … headₕ) · W_o`
 
 ---
-
-*Study aid; for authoritative content and notebooks, refer to the official DeepLearning.AI course.*

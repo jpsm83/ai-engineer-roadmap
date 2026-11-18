@@ -1,3 +1,5 @@
+### Intro
+
 **Q: Why not always use the biggest model at maximum effort?**
 A: Cost and latency scale with both. A one-line rename does not need maximum reasoning, and using it there wastes time without improving the result.
 

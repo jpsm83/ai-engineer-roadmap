@@ -1,8 +1,5 @@
 # ChatGPT Prompt Engineering for Developers — Q&A
 
-Fast-reference notes for Isa Fulford and Andrew Ng's *ChatGPT Prompt Engineering for Developers* (DeepLearning.AI).
-**Introduction → Guidelines → Iterative development → Summarizing → Inferring → Transforming → Expanding → Chatbot.**
-
 ---
 
 ## Part 1 — Introduction
@@ -233,5 +230,3 @@ A: Summaries, inferences, transformations, expansions, and chatbots — often in
 | Context | Message history you must resend; the API is stateless |
 
 ---
-
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*

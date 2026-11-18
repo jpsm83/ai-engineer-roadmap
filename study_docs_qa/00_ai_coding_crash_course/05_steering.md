@@ -1,12 +1,3 @@
-# AI Coding Crash Course — Steering — Q&A
-
-Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
-**The Steering Map → Steering With a Pointer → What Are Agent Skills? → Write a Skill → User vs. Project Skills → Navigation Pointers → Pruning → Trying Out Pruning → Claude Code's Automatic Memory.**
-
----
-
-## Part 5 — Steering
-
 ### The Steering Map
 
 **Q: What is steering?**
@@ -210,5 +201,3 @@ A: Treat it as a secondary source: read it, correct it, and remove stale entries
 | Home Repo | Shared repo holding skills and pointers to other repos |
 
 ---
-
-*Study aid; for authoritative content, refer to the official AI Hero course.*

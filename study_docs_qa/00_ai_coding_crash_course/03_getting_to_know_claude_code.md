@@ -1,12 +1,3 @@
-# AI Coding Crash Course — Getting to Know Claude Code — Q&A
-
-Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
-**Intro → Managing Your Claude Code Session → Prompting in the Terminal → Claude and Your IDE → Going Forwards and Backwards in Time → Running Bash Commands → Permissions.**
-
----
-
-## Part 3 — Getting to Know Claude Code
-
 ### Intro
 
 **Q: What is Claude Code?**
@@ -14,9 +5,6 @@ A: A terminal **harness** around a Claude model. It adds filesystem tools, a Bas
 
 **Q: Where does Claude Code run?**
 A: In your terminal, from the project root. It can also integrate with an IDE, but the core loop is the same: you type a request, the agent calls tools, and the result returns to the conversation.
-
-**Q: What should you do before your first session?**
-A: Open the project root, check `git status`, and run `claude`. A clean working tree makes it easy to see what the agent changed and to undo anything you do not want.
 
 **Q: What is the mental model for the session?**
 A: It is a conversation that accumulates tool results. Everything the agent reads or runs stays in the context until you clear or compact, so the session is a budget, not a free unlimited workspace.
@@ -178,5 +166,3 @@ A: Destructive filesystem commands, force pushes, production database access, se
 | Sandbox | Isolated environment that limits blast radius |
 
 ---
-
-*Study aid; for authoritative content, refer to the official AI Hero course.*

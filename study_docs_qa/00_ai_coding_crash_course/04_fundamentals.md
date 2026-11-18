@@ -1,12 +1,3 @@
-# AI Coding Crash Course — Fundamentals — Q&A
-
-Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
-**Your Starting Context → Killing Bloat → Showing Context in the Status Line → Codebase Exploration → The /teach Skill → Build a Feature → Why Plan Mode Sucks → The Grill-Execute-Clear Loop → Compaction → Handing Off → Clear, Compact, Handoff, or Subagent → Auto-Compaction.**
-
----
-
-## Part 4 — Fundamentals
-
 ### Your Starting Context
 
 **Q: What is your starting context?**
@@ -235,5 +226,3 @@ A: Reload the plan or handoff document, restate the constraints that matter, and
 | Secondary source | A summary or account of a primary source |
 
 ---
-
-*Study aid; for authoritative content, refer to the official AI Hero course.*

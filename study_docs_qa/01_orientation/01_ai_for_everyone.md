@@ -1,12 +1,5 @@
 # AI for Everyone — Q&A
 
-Fast-reference notes for Andrew Ng's *AI for Everyone* (DeepLearning.AI).
-**What is AI → Building AI projects → Building AI in your company → AI and society.**
-
----
-
-## Week 1 — What is AI?
-
 ### Machine Learning
 
 **Q: What is machine learning?**
@@ -61,10 +54,6 @@ A: Tasks that need deep common sense, general reasoning across domains, creativi
 **Q: How do you tell whether AI can do a task?**
 A: Check whether it can be framed as an input → output mapping and whether enough data exists. Rule of thumb: if a typical person can do it with a second of thought, AI can probably do it — given data.
 
----
-
-## Week 2 — Building AI Projects
-
 ### ML project workflow
 
 **Q: What is the typical ML project workflow?**
@@ -110,10 +99,6 @@ A: The task is a clear input → output mapping, enough labeled data exists or c
 **Q: What should you check before starting a project?**
 A: Define the business goal and success metric, confirm data availability and quality, estimate effort and cost, check technical feasibility, and plan evaluation and deployment.
 
----
-
-## Week 3 — Building AI in Your Company
-
 ### Strategy and case selection
 
 **Q: How should a company choose AI projects?**
@@ -153,10 +138,6 @@ A: People must trust and adopt the systems. Training, communication, and involvi
 
 **Q: How should a company grow its AI team?**
 A: Start with a small team or vendor support for pilots, build internal capability through training and hiring, then scale as AI becomes core to the business.
-
----
-
-## Week 4 — AI and Society
 
 ### Benefits and risks
 
@@ -224,5 +205,3 @@ A: Establish governance, test for bias and safety, ensure transparency and human
 | Responsible AI | Fair, safe, transparent, accountable AI |
 
 ---
-
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*

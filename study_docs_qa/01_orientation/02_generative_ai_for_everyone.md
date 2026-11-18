@@ -1,12 +1,5 @@
 # Generative AI for Everyone — Q&A
 
-Fast-reference notes for Andrew Ng's *Generative AI for Everyone* (DeepLearning.AI).
-**Introduction → Projects → Business & Society.**
-
----
-
-## Week 1 — Introduction to Generative AI
-
 ### What is Generative AI?
 
 **Q: What is generative AI?**
@@ -41,7 +34,7 @@ A: Learning from the data itself by predicting hidden parts (e.g., the next word
 **Q: What is fine-tuning?**
 A: Further training a pretrained model on a smaller, targeted dataset to improve a task or style (e.g., being a helpful assistant or following a company format).
 
-**Q: What is RLHF?**
+**Q: What is RLHF (Reinforcement Learning from Human Feedback)?**
 A: Reinforcement Learning from Human Feedback: humans rank outputs, and the model is trained to produce preferred outputs — making it more helpful, harmless, and honest.
 
 **Q: What is a hallucination?**
@@ -87,10 +80,6 @@ A: Outputs can be wrong, biased, or inappropriate. A human should verify facts, 
 
 **Q: What is a good workflow for using generative AI at work?**
 A: (1) Define the task and success criteria, (2) write a clear prompt with context and format, (3) generate a draft, (4) review and edit, (5) iterate on the prompt, (6) own the final result.
-
----
-
-## Week 2 — Generative AI Projects
 
 ### Building Software
 
@@ -147,10 +136,6 @@ A: Constraints and checks keeping a system safe and on-task — input/output fil
 **Q: Why does data privacy matter when using generative AI?**
 A: Inputs may contain sensitive data. Teams should understand the provider's data handling, avoid sending confidential data to untrusted tools, and follow company and legal policy.
 
----
-
-## Week 3 — Business and Society
-
 ### Business
 
 **Q: How do you find good generative AI use cases?**
@@ -180,7 +165,7 @@ A: Vague or low-value use cases, ignoring data quality, underestimating change m
 **Q: Why is generative AI called a general-purpose technology?**
 A: Like electricity or the internet, it can improve many tasks and industries. Impact comes from broad adoption and workflow integration, not from one application.
 
-**Q: How should companies measure ROI on generative AI?**
+**Q: How should companies measure ROI (return of investment) on generative AI?**
 A: Measure concrete outcomes — time saved, cost reduced, quality improved, revenue gained — in pilots before scaling. Balance quick wins with long-term transformation.
 
 ### Society
@@ -238,5 +223,3 @@ A: Encourage experimentation within guardrails, train staff, share best practice
 | Responsible AI | Safe, fair, accountable AI |
 
 ---
-
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*

@@ -1,8 +1,5 @@
 # Finetuning Large Language Models — Q&A
 
-Fast-reference notes for Sharon Zhou's *Finetuning Large Language Models* (DeepLearning.AI / Lamini).
-**Why Finetune → Where Finetuning Fits In → Instruction Finetuning → Data Preparation → Training → Evaluation and Iteration → Getting Started.**
-
 ---
 
 ## Part 1 — Why Finetune
@@ -238,5 +235,3 @@ A: Finetuning before trying prompting or RAG, or training on too little or too n
 - **LoRA update:** `W' = W + (α/r) · B · A`
 
 ---
-
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*

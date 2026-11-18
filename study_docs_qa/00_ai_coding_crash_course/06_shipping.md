@@ -1,12 +1,3 @@
-# AI Coding Crash Course — Shipping — Q&A
-
-Fast-reference notes for Matt Pocock's *AI Coding Crash Course* (AI Hero).
-**How to Tackle Massive Tasks → Set Up Your Issue Tracker → Write Great Specs With This Skill → Split Features Across Context Windows With Tickets → Executing Your Tickets → Should You Keep Your Specs? → Rerouting: When the Destination Changes → The Goal Command → Enforcing Your Coding Standards → The /implement-spec Skill → Ask Matt → Where You Go From Here → More Exercises.**
-
----
-
-## Part 6 — Shipping
-
 ### How to Tackle Massive Tasks
 
 **Q: Why can't a massive task be done in one session?**
@@ -101,7 +92,7 @@ A: Read the diff before merging, not just the agent's summary. Automated checks 
 A: No. It is a snapshot of what you knew when the work started, and it goes stale as implementation teaches you more. Treat it as disposable after the work ships.
 
 **Q: What should survive after a spec is discarded?**
-A: Durable decisions belong in ADRs, a glossary, or project documentation. The spec records one effort; those files record knowledge that outlives it.
+A: Durable decisions belong in ADRs (architecture decision record), a glossary, or project documentation. The spec records one effort; those files record knowledge that outlives it.
 
 **Q: Why do tickets get deleted or closed?**
 A: They are disposable slices sized for one session. Once the work lands, the ticket has served its purpose; keeping it adds maintenance without adding value.
@@ -176,39 +167,11 @@ A: A test can silently skip because a gitignored fixture, local database, or cre
 
 ### Choosing a workflow
 
-**Q: What is `/ask-matt`?**
-A: A router skill that helps you choose the right workflow or skill for the situation. It is useful when you know the goal but not whether to grill, spec, ticket, implement, or review.
-
-**Q: When should you use it?**
-A: At a decision point: the work is fuzzy, the plan is too big, or you are unsure whether a spec is needed. It saves you from forcing the wrong process onto the task.
-
-### Where You Go From Here
-
-**Q: What should you practice after the course?**
-A: Run the full loop on your own repository: grill a feature, write a spec, split it into tickets, implement them in fresh sessions, and review each diff.
-
-**Q: How do you build the habit of context management?**
-A: Watch the context indicator, clear between tasks, compact at phase boundaries, and write decisions to disk. Treat the smart zone as a budget you spend deliberately.
-
 **Q: How do you get better at steering?**
 A: Prune `AGENTS.md`, turn repeated prompts into skills, and add pointers instead of pasted docs. Review the always-loaded context regularly.
 
-**Q: How do you safely try AFK work?**
+**Q: How do you safely try AFK (away from keyboard) work?**
 A: Start with a well-specified, low-risk ticket, a sandbox, a permissive permission mode, and automated checks. Review the PR in the morning before merging.
-
-**Q: What is the durable skill from the course?**
-A: The loop: understand the model and harness, curate context, grill the requirements, split the work, verify mechanically, and review the result. The tools change; the loop transfers.
-
-### Further practice
-
-**Q: How can you reuse the course exercises?**
-A: Reset to a checkpoint, rebuild the lesson without looking at the solution, then cherry-pick the solution and compare. The gap between your attempt and the solution is the lesson.
-
-**Q: What is a good self-directed exercise?**
-A: Pick a small feature in the exercise repo, grill it, write a spec and three tickets, implement one ticket per session, and review the integration. Repeat with a larger feature.
-
-**Q: How do you practice context management deliberately?**
-A: Start a task, watch the context grow, and compact or hand off at a boundary before the agent degrades. Compare the result with pushing through the same task in one session.
 
 ---
 
@@ -233,5 +196,3 @@ A: Start a task, watch the context grow, and compact or hand off at a boundary b
 | Software factory | Sessions started by triggers instead of a human |
 
 ---
-
-*Study aid; for authoritative content, refer to the official AI Hero course.*

@@ -4,10 +4,9 @@
 A: The **parameters** — the frozen numbers produced by training. A model is stateless and does only **next-token prediction**: tokens in, one likely next token out, repeated.
 
 **Q: What is a harness?**
+A: Everything around the model that turns it into an agent: tools, the **system prompt**, context-window management, permissions, and the loop that executes tool calls.
 
 ![Harness](../../images/harness.webp)
-
-A: Everything around the model that turns it into an agent: tools, the **system prompt**, context-window management, permissions, and the loop that executes tool calls.
 
 **Q: What is an agent?**
 A: A model plus a harness, addressed as one actor. Claude Code and Cursor are agents; the same model in a different harness behaves differently.
@@ -232,5 +231,3 @@ A: It is a **secondary source**. The parent sees the subagent's account, not the
 | Subagent | A child agent with its own context and a report back |
 
 ---
-
-*Study aid; for authoritative content, refer to the official AI Hero course.*

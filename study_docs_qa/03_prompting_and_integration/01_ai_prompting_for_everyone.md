@@ -1,8 +1,5 @@
 # AI Prompting for Everyone — Q&A
 
-Fast-reference notes for Andrew Ng's *AI Prompting for Everyone* (DeepLearning.AI).
-**Finding information → AI as a thought partner → Working with multimedia and code.**
-
 ---
 
 ## Part 1 — Finding Information
@@ -156,5 +153,3 @@ A: (1) Brainstorm the question with context and critique, (2) research with sour
 | Code-execution tool | Lets the model write and run code for analysis and plots |
 
 ---
-
-*Study aid; for authoritative content, refer to the official DeepLearning.AI course.*
