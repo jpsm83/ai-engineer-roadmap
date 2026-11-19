@@ -28,8 +28,6 @@ from openai import OpenAI
 client = OpenAI(api_key=openai_api_key)
 NON_REASONING_MODEL = 'gpt-6-luna'
 REASONING_MODEL = 'gpt-5-nano'
-GPT_MODEL = NON_REASONING_MODEL
-O1_MODEL = REASONING_MODEL
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def create_chat_completion(model, messages, **kwargs):
@@ -64,7 +62,7 @@ compare_strings(string_a, string_b)
 
 with open(os.path.join(BASE_DIR, 'originalPolicy', 'flightCancellationsPolicy.md'), 'r') as file:
     flight_cancellation_policy = file.read()
-    print(flight_cancellation_policy)
+    # print(flight_cancellation_policy)
 
 CONVERSION_PROMPT = f"""
 You are a helpful assistant tasked with taking an external facing help center article and converting it into a internal-facing programmatically executable routine optimized for an LLM. 
@@ -134,13 +132,13 @@ def compare_lists(a, b):
     diff_b = counter_b - counter_a
     
     # Report differences
-    print("Items in A that are not in B (or more of in A):")
-    for item, count in diff_a.items():
-        print(f"{item}: {count}")
+    # print("Items in A that are not in B (or more of in A):")
+    # for item, count in diff_a.items():
+    #     print(f"{item}: {count}")
 
-    print("\nItems in B that are not in A (or more of in B):")
-    for item, count in diff_b.items():
-        print(f"{item}: {count}")
+    #print("\nItems in B that are not in A (or more of in B):")
+    # for item, count in diff_b.items():
+    #     print(f"{item}: {count}")
 
 def extract_function_names(text):
     # Use regex to match text between backticks and extract function names
@@ -149,7 +147,7 @@ def extract_function_names(text):
     return matches
 
 # Extract a unique list of the functions in the generated routine
-function_names_from_o1 = set(extract_function_names(flight_cancellation_routine))
+function_names_from_reasoning_model = set(extract_function_names(flight_cancellation_routine))
 
 # Extract the list of TOOLs we provided the model
 function_names_defined = [tool["function"]["name"] for tool in TOOLS if tool["type"] == "function"]
@@ -157,7 +155,7 @@ function_names_defined = [tool["function"]["name"] for tool in TOOLS if tool["ty
 # Print the differences
 ## Items that are in A and not in B need functions written for them
 ## Items that are in B and not in A are fine, they are just unused in the routine the model has written
-compare_lists(function_names_from_o1, function_names_defined)
+compare_lists(function_names_from_reasoning_model, function_names_defined)
 
 def agent_response(transcript, policy, model):
     try:
@@ -223,8 +221,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
 
     # Initialize transcript
     transcript = [{"role": "user", "content": request}]
-    if verbose:
-        print(f'Starting request: {request}')
+    # if verbose:
+        # print(f'Starting request: {request}')
     
     # Initialize variables
     is_correct = False
@@ -360,8 +358,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             else:
-                if verbose:
-                    print('Got a successful function call')
+                # if verbose:
+                    # print('Got a successful function call')
                 # Stop and compare function call and arguments with expected_function and expected_inputs
                 transcript.append(response.to_dict())
                 actual_function = function_name
@@ -416,7 +414,7 @@ def evaluate_function_calls(df, policy, model, i=0, verbose=False):
     return df, total_accuracy
 
 eval_df = pd.read_csv(os.path.join(BASE_DIR, 'evals', 'policyEvals.csv'))
-print(eval_df.head())
+# print(eval_df.head())
 
 def display_row(index):
     eval_row = eval_df.iloc[index]
@@ -435,12 +433,12 @@ def display_row(index):
         color = "blue" if role == "user" else "red"
         print(colored(str(entry), color))
 
-df, accuracy = evaluate_function_calls(eval_df, flight_cancellation_routine, GPT_MODEL)
+df, accuracy = evaluate_function_calls(eval_df, flight_cancellation_routine, NON_REASONING_MODEL)
 
 # Display the accuracy as a mini header
 display(Markdown(f"### Accuracy: {accuracy:.2%}"))
 
-display(df)
+# display(df)
 
 display_row(8)
 
@@ -472,7 +470,7 @@ OUTPUT_SCHEMA = {
                     "strict": True
                 }
 
-start_o1_message = [
+start_reasoning_model_message = [
     {
         "role": "user",
         "content": f"""# Instructions
@@ -527,18 +525,19 @@ def num_tokens_from_messages(messages):
     tokens = encoding.encode(entire_input)
     return len(tokens)
 
+'''
 # =======================================================================================================
 # ========================== WARNING: CODE BELOW IS FOR LEARNING PURPOSES ONLY ==========================
 # ========================== IT WILL CONSUME A LOT OF TOKENS AND TIME ===================================
 # ========================== DO NOT RUN THIS CODE =======================================================
 # =======================================================================================================
 
-'''
+"""
 # start with data from first run
 routines = [flight_cancellation_routine]
 results = [df]
 accuracies = [round(accuracy * 100, 2)]
-o1_messages = start_o1_message.copy()
+reasoning_model_messages = start_reasoning_model_message.copy()
 
 MAX_TOKENS = 120000
 
@@ -557,22 +556,22 @@ for i in range(3):
     )
     
     # Check token count before adding the newest eval
-    candidate_messages = o1_messages + [{"role": "user", "content": new_eval_content}]
+    candidate_messages = reasoning_model_messages + [{"role": "user", "content": new_eval_content}]
     if num_tokens_from_messages(candidate_messages) <= MAX_TOKENS:
-        o1_messages.append({"role":"user", "content": new_eval_content})
+        reasoning_model_messages.append({"role":"user", "content": new_eval_content})
     else:
         # If we can't even fit the newest eval, consider truncation or error handling
         # For simplicity, we skip truncation logic here
         print("excluding eval content {num_tokens_from_messages(candidate_messages)}")
         pass
 
-    print(f"num tokens {num_tokens_from_messages(o1_messages)}")
-    print(f"len messages {len(o1_messages)}")
+    print(f"num tokens {num_tokens_from_messages(reasoning_model_messages)}")
+    print(f"len messages {len(reasoning_model_messages)}")
 
 
     # Get the updated routine from the metaprompting assistant
-    temp_routine_json = get_openai_response(o1_messages
-                                            , O1_MODEL
+    temp_routine_json = get_openai_response(reasoning_model_messages
+                                            , REASONING_MODEL
                                             ,response_format=OUTPUT_SCHEMA)
     #temp_routine_str = temp_routine_json.strip("json```").strip("```")
     new_routine = json.loads(temp_routine_json)["final_answer"]
@@ -584,7 +583,7 @@ for i in range(3):
     eval_df, accuracy = evaluate_function_calls(
         eval_df,
         new_routine,
-        GPT_MODEL,
+        NON_REASONING_MODEL,
         i
     )
     accuracies.append(round(accuracy * 100, 2))
@@ -596,8 +595,8 @@ for i in range(3):
     display(eval_df.loc[failed_ids])
     eval_df.to_csv(f'evals/results_run_{i+1}.csv', index=False)
 
-    # Instantiate fresh o1 message
-    o1_messages = start_o1_message.copy()
+    # Instantiate fresh reasoning model message
+    reasoning_model_messages = start_reasoning_model_message.copy()
 
     # Attempt to include older examples (omitting 'transcript') within token limit
     older_results = results[:-1][::-1]  # all except the newest, reversed for most recent first
@@ -608,9 +607,9 @@ for i in range(3):
             truncated_df = old_eval_df
 
         old_content = "## Older eval (no transcript):\n" + truncated_df.to_json(orient='records')
-        candidate_messages = o1_messages + [{"role": "user", "content": old_content}]
+        candidate_messages = reasoning_model_messages + [{"role": "user", "content": old_content}]
         if num_tokens_from_messages(candidate_messages) <= MAX_TOKENS:
-            o1_messages.append({"role": "user", "content": old_content})
+            reasoning_model_messages.append({"role": "user", "content": old_content})
         else:
             # If we exceed token limits, stop adding older examples
             break
@@ -628,4 +627,5 @@ best_routine = routines[accuracies.index(max(accuracies))]
 display(Markdown(f"## Best Routine\n{best_routine}"))
 
 routines[accuracies.index(max(accuracies))]
+"""
 '''

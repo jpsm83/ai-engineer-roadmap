@@ -1,12 +1,14 @@
-# Python Study Reference: `.venv`, dependencies, `__pycache__`, and `__init__`
+# Python Study Reference: `.venv`, dependencies, `__pycache__`, `__init__`, and error handling
 
-This document explains two generated folders, dependency files, and one special
-Python method:
+This document explains two generated folders, dependency files, one special
+Python method, and how Python error handling compares with JavaScript:
 
 - `.venv/` stores an isolated Python environment and its installed packages.
 - `requirements.txt` records which packages the project needs.
 - `__pycache__/` stores compiled bytecode created automatically by Python.
 - `__init__` is the special method Python calls to initialize a new object.
+- Part 5 maps JavaScript `try` / `catch` / `throw` to Python `try` / `except` /
+  `raise`, and shows where `continue` fits.
 
 The two folders are generated locally and should not be committed to git.
 `requirements.txt` is a source file you maintain. `__init__` is part of Python's
@@ -1112,3 +1114,428 @@ Study summary:
 - Both are disposable generated state. Your real project is the source code
   plus the files that describe dependencies, such as `requirements.txt` or
   `pyproject.toml`.
+
+---
+
+# Part 5: Error handling in JavaScript and Python
+
+JavaScript and Python handle errors with the same idea and different keyword
+names. You mark a region of code that might fail, you name what to do when it
+fails, and you decide whether the current function stops or keeps going.
+
+The keyword names are the same for ordinary functions and for `async`
+functions. Async code changes how you wait for a result (`await`). It does not
+change how you catch an error.
+
+The course example this section explains is `generate_routine` in
+`04_reasoning_models/05_meta_prompting.py`:
+
+```python
+def generate_routine(policy):
+    try:
+        messages = [
+            {
+                "role": "user",
+                "content": f"""
+                    {CONVERSION_PROMPT}
+
+                    POLICY:
+                    {policy}
+                """
+            }
+        ]
+
+        response = create_chat_completion(REASONING_MODEL, messages)
+
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise
+```
+
+## 5.1 Keyword names
+
+| What you want to do | JavaScript | Python |
+|---|---|---|
+| Mark code that might fail | `try { ... }` | `try:` |
+| Handle a failure | `catch (e) { ... }` | `except Exception as e:` |
+| Name the error object | `(e)` in `catch (e)` | `as e` in `except ... as e` |
+| Send the error to the caller | `throw e` | `raise` |
+| Send a new error | `throw new Error("...")` | `raise ValueError("...")` |
+| Run code whether it failed or not | `finally { ... }` | `finally:` |
+| Run code only when `try` succeeded | no keyword; put it after the `try` in `try`, or after the whole `try`/`catch` | `else:` on the `try` |
+| Skip to the next loop iteration | `continue` | `continue` |
+| Leave the loop | `break` | `break` |
+
+`continue` and `break` are loop keywords in both languages. They are not the
+error-handling names for "keep going" or "stop".
+
+Python uses indentation to mark the block. JavaScript uses braces. The `try`
+body, each `except` body, and the `finally` body are the indented lines under
+that keyword.
+
+## 5.2 The same pattern in both languages
+
+This JavaScript function logs the failure and then sends it to the caller.
+That is the same behavior as `generate_routine`:
+
+```javascript
+function generateRoutine(policy) {
+  try {
+    const response = createChatCompletion(REASONING_MODEL, messages);
+    return response.choices[0].message.content;
+  } catch (e) {
+    console.log(`An error occurred: ${e}`);
+    throw e;
+  }
+}
+```
+
+```python
+def generate_routine(policy):
+    try:
+        response = create_chat_completion(REASONING_MODEL, messages)
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise
+```
+
+Reading the Python version line by line:
+
+- `try:` starts the protected region. A failure in
+  `create_chat_completion`, or in `response.choices[0]`, jumps to `except`.
+- `except Exception as e:` catches ordinary errors and stores the error object
+  in `e`. This is the Python spelling of `catch (e)`.
+- `print(f"An error occurred: {e}")` writes the error text.
+  `f"...{e}"` is Python's f-string. It fills the same role as a JavaScript
+  template literal `` `...${e}` ``.
+- `raise` with nothing after it re-sends the error that was just caught. The
+  original traceback stays attached. This is the Python spelling of `throw e`
+  inside a `catch`.
+
+On success, both functions return the message content. On failure, both print
+the error and then stop the function so the caller sees the failure.
+
+## 5.3 What `raise` does
+
+`raise` stops the current function and sends the error upward. The lines after
+`raise` in that function do not run. The caller does not receive a return
+value.
+
+In the course file, the next statement is:
+
+```python
+flight_cancellation_routine = generate_routine(flight_cancellation_policy)
+```
+
+If `generate_routine` hits `raise`, that assignment does not happen. The
+notebook cell stops, and you see both the printed message and the traceback.
+
+Two forms:
+
+- `raise` alone, inside `except`, re-sends the error you just caught.
+- `raise ValueError("policy was empty")` sends a new error of that type.
+
+Use the bare `raise` when you only want to log and then keep the original
+failure, which is what the course example does.
+
+## 5.4 How to let execution continue
+
+To keep going after a failure, catch the error and do not re-send it. In
+JavaScript, omit `throw`. In Python, omit `raise`.
+
+```javascript
+try {
+  generateRoutine(policy);
+} catch (e) {
+  console.log(`An error occurred: ${e}`);
+}
+console.log("still running");
+```
+
+```python
+try:
+    generate_routine(policy)
+except Exception as e:
+    print(f"An error occurred: {e}")
+print("still running")
+```
+
+If the handler is inside a function and you neither re-send the error nor
+return a value, the function ends normally:
+
+- JavaScript returns `undefined`.
+- Python returns `None`.
+
+Return an explicit fallback when the caller needs a real value:
+
+```python
+try:
+    response = create_chat_completion(REASONING_MODEL, messages)
+    return response.choices[0].message.content
+except Exception as e:
+    print(f"An error occurred: {e}")
+    return ""
+```
+
+The caller then continues with `""` instead of an exception.
+
+## 5.5 `continue` belongs to loops
+
+`continue` means "skip the rest of this loop iteration and start the next
+one." It is legal only inside a loop. Outside a loop it is a syntax error in
+both languages.
+
+Use it when one item in a collection fails and the remaining items should
+still run:
+
+```javascript
+for (const policy of policies) {
+  try {
+    generateRoutine(policy);
+  } catch (e) {
+    console.log(e);
+    continue;
+  }
+}
+```
+
+```python
+for policy in policies:
+    try:
+        generate_routine(policy)
+    except Exception as e:
+        print(e)
+        continue
+```
+
+The `except` / `catch` is what absorbs the error. `continue` only moves the
+loop forward. If a `finally` block is present, it runs before `continue`
+starts the next iteration.
+
+`break` leaves the loop entirely, in both languages. It also does not catch
+an error by itself.
+
+## 5.6 Async and sync use the same error syntax
+
+`try` / `except` wraps any code that might fail. The course function is
+synchronous: `create_chat_completion(...)` is a normal call, and the handler
+is still `try` / `except`.
+
+An async function uses the same handler around `await`:
+
+```javascript
+async function generateRoutine(policy) {
+  try {
+    const response = await createChatCompletion(REASONING_MODEL, messages);
+    return response.choices[0].message.content;
+  } catch (e) {
+    console.log(`An error occurred: ${e}`);
+    throw e;
+  }
+}
+```
+
+```python
+async def generate_routine(policy):
+    try:
+        response = await create_chat_completion(REASONING_MODEL, messages)
+        return response.choices[0].message.content
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise
+```
+
+What changes for async work:
+
+- the function is declared with `async` / `async def`,
+- the call that waits is written with `await`.
+
+What stays the same:
+
+- `try` / `catch` and `try` / `except`,
+- `throw` and `raise`,
+- `continue`, which still only applies inside a loop.
+
+## 5.7 `finally`, and Python's `else`
+
+`finally` runs after the `try` whether the code succeeded, failed, or
+re-sent the error. Use it for cleanup that must happen either way. Both
+languages have it:
+
+```javascript
+try {
+  openFile();
+} catch (e) {
+  console.log(e);
+} finally {
+  closeFile();
+}
+```
+
+```python
+try:
+    open_file()
+except Exception as e:
+    print(e)
+finally:
+    close_file()
+```
+
+Python can also attach `else` to a `try`. That block runs only when the `try`
+body completed with no error. JavaScript has no keyword for this; the usual
+equivalent is code at the end of the `try` block.
+
+```python
+try:
+    value = int(text)
+except ValueError as e:
+    print(e)
+else:
+    print("conversion succeeded:", value)
+finally:
+    print("attempt finished")
+```
+
+Order in Python is `try`, `except`, `else`, `finally`. A failure skips `else`.
+`finally` still runs, and then a `raise` continues upward.
+
+## 5.8 Choosing which errors to catch
+
+JavaScript `catch` receives whatever was thrown.
+
+Python asks you to name a type. `except Exception` catches the normal error
+types: `TypeError`, `ValueError`, `KeyError`, `IndexError`, and library
+errors that inherit from `Exception`. It leaves system exits alone.
+`KeyboardInterrupt` and `SystemExit` inherit from `BaseException`, so
+`except Exception` does not catch them.
+
+Handle specific errors first when each failure needs a different response:
+
+```javascript
+try {
+  parsePolicy(policy);
+} catch (e) {
+  if (e instanceof TypeError) {
+    console.log("wrong type");
+  } else if (e instanceof RangeError) {
+    console.log("value out of range");
+  } else {
+    throw e;
+  }
+}
+```
+
+```python
+try:
+    parse_policy(policy)
+except TypeError as e:
+    print("wrong type")
+except ValueError as e:
+    print("bad value")
+except Exception as e:
+    print(f"An error occurred: {e}")
+    raise
+```
+
+Python checks the `except` lines from top to bottom and uses the first match.
+
+A bare `except:` with no type catches almost everything, including
+`KeyboardInterrupt`. Prefer `except Exception` unless you have a specific
+reason to be that broad.
+
+## 5.9 Names of common errors
+
+Exception types use CapWords in both languages. The sets are similar, not
+identical:
+
+| Situation | JavaScript | Python |
+|---|---|---|
+| Base type for ordinary errors | `Error` | `Exception` |
+| Wrong type of value | `TypeError` | `TypeError` |
+| Missing variable | `ReferenceError` | `NameError` |
+| Bad value | often `RangeError` or a custom `Error` | `ValueError` |
+| Missing dictionary key | usually your own check; reading a missing property gives `undefined` | `KeyError` |
+| Missing attribute | `TypeError` when reading a property of `undefined` or `null` | `AttributeError` |
+| Index out of range | reading past the end gives `undefined` | `IndexError` |
+
+Python raises these for you when the operation is illegal. Your own `raise
+ValueError("...")` is the counterpart of `throw new Error("...")`.
+
+## 5.10 Common mix-ups when coming from JavaScript
+
+- **`except` is the Python name for `catch`.** It is not a special async
+  keyword. Sync and async code both use it.
+- **`raise` is the Python name for `throw`.** It stops the current function
+  and sends the error to the caller. The course example prints the error and
+  then does this on purpose.
+- **Omitting `raise` is what lets the caller continue.** That corresponds to a
+  JavaScript `catch` that does not `throw`.
+- **`continue` skips one loop iteration.** It does not absorb an error, and it
+  is only valid inside `for` or `while`.
+- **`Exception` in `except Exception as e` is the type filter.** `as e` is the
+  variable name. Together they correspond to `catch (e)`, limited to normal
+  exceptions.
+- **A handled error still needs a return value if the caller expects one.**
+  Otherwise Python returns `None` and JavaScript returns `undefined`.
+
+## 5.11 Error-handling cheat sheet
+
+```javascript
+// Log and stop this function (same behavior as the course example).
+try {
+  return response.choices[0].message.content;
+} catch (e) {
+  console.log(`An error occurred: ${e}`);
+  throw e;
+}
+
+// Log and keep going.
+try {
+  generateRoutine(policy);
+} catch (e) {
+  console.log(e);
+}
+
+// Log, skip this item, and process the rest of the loop.
+for (const policy of policies) {
+  try {
+    generateRoutine(policy);
+  } catch (e) {
+    console.log(e);
+    continue;
+  }
+}
+```
+
+```python
+# Log and stop this function (the course example).
+try:
+    return response.choices[0].message.content
+except Exception as e:
+    print(f"An error occurred: {e}")
+    raise
+
+# Log and keep going. The function returns None if it has no other return.
+try:
+    generate_routine(policy)
+except Exception as e:
+    print(e)
+
+# Log, skip this item, and process the rest of the loop.
+for policy in policies:
+    try:
+        generate_routine(policy)
+    except Exception as e:
+        print(e)
+        continue
+```
+
+Names to remember:
+
+- JavaScript `try` / `catch` / `throw` / `finally`
+- Python `try` / `except` / `raise` / `finally`, plus `else` when the `try`
+  succeeded
+- `continue` and `break` mean the same thing in both languages, and both
+  belong to loops
