@@ -1,19 +1,19 @@
-import openai
 import os
-
 from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv()) # read local .env file
+from openai import OpenAI
 
-openai.api_key  = os.getenv('OPENAI_API_KEY')
+_ = load_dotenv(find_dotenv())  # read local .env file
 
-def get_completion(prompt, model="gpt-5-nano", temperature=2):
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def get_completion(prompt, model="gpt-5-nano", temperature=1):
     messages = [{"role": "user", "content": prompt}]
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=temperature, # this is the degree of randomness of the model's output
+        # temperature=temperature,  # course uses 0–2; gpt-5-nano only allows default 1
     )
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content
 
 # given the sentiment from the lesson on "inferring",
 # and the original customer message, customize the email

@@ -1,19 +1,32 @@
 # Fine-tuning Course Examples
 
-This folder contains the course examples for fine-tuning a language model,
-from inspecting data to comparing a fine-tuned model with its base model.
+This folder holds the coding examples for *Finetuning Large Language Models*
+(DeepLearning.AI / Lamini). The scripts walk from inspecting data through a
+short local training run, then compare a fine-tuned model with its base
+model:
 
 - `01_finetuned_vs_non_finetuned.py` — sends the same prompts to a
-  non-fine-tuned `meta-llama/Llama-2-7b-hf` model and to the chat/fine-tuned
-  version, then prints both results.
-- `02_finetuning_data.py` — inspects pretraining data and builds the
-  `lamini_docs_processed.jsonl` instruction dataset.
-- `03_data_preparation.py` — tokenizer basics, padding, truncation, prompt
-  templating, and tokenized train/test splits.
-- `04_training_process.py` — a short local Hugging Face training run (CPU
-  friendly) plus the hosted Lamini training examples when credentials exist.
-- `05_evaluation.py` — exact-match evaluation of the fine-tuned model, plus an
-  optional lm-evaluation-harness ARC Easy benchmark.
+  non-fine-tuned `meta-llama/Llama-2-7b-hf` model and to
+  `meta-llama/Llama-2-7b-chat-hf`, then prints both results. Needs Lamini
+  credentials.
+- `02_finetuning_data.py` — streams a few C4 pretraining examples, then
+  builds `lamini_docs_processed.jsonl` from `lamini_docs.jsonl` using
+  text-only and question/answer prompt templates. Also loads
+  `lamini/lamini_docs` from the Hugging Face Hub.
+- `03_data_preparation.py` — tokenizer basics on `EleutherAI/pythia-70m`
+  (padding, truncation, prompt templating), then tokenized train/test
+  splits from the local JSONL. Also peeks at Hub datasets
+  (`lamini/lamini_docs`, `lamini/taylor_swift`).
+- `04_training_process.py` — a short local Hugging Face training run of
+  `EleutherAI/pythia-70m` (CPU friendly, 3 steps), saved under
+  `lamini_docs_3_steps/`, then compared with `lamini/lamini_docs_finetuned`.
+  Hosted Lamini training is skipped when credentials are missing.
+- `05_evaluation.py` — exact-match evaluation of
+  `lamini/lamini_docs_finetuned` on the Hub test split, plus an optional
+  lm-evaluation-harness ARC Easy benchmark.
+
+Fast-reference Q&A for the same course:
+[study_docs_qa/02_llm_literacy/02_finetuning_large_language_models.md](../study_docs_qa/02_llm_literacy/02_finetuning_large_language_models.md).
 
 For a beginner-friendly study reference about `.venv/`, `__pycache__/`, and
 the `__init__` method, see
@@ -25,7 +38,7 @@ to every Python folder in this repository.
 ```
 02_finetuning/
 ├── .venv/                        # local virtual environment (not committed)
-├── __pycache__/                  # compiled bytecode (not committed)
+├── __pycache__/                  # compiled bytecode, if Python created it (not committed)
 ├── README.md
 ├── requirements.txt              # pinned dependencies for this folder
 ├── 01_finetuned_vs_non_finetuned.py
@@ -34,8 +47,16 @@ to every Python folder in this repository.
 ├── 04_training_process.py
 ├── 05_evaluation.py
 ├── lamini_docs.jsonl             # raw instruction data
-└── lamini_docs_processed.jsonl   # generated question/answer data
+└── lamini_docs_processed.jsonl   # written by 02_finetuning_data.py
 ```
+
+Each folder that has its own Python code can have its own `.venv/`. The
+repository root `.gitignore` ignores every `.venv/` and `__pycache__/`, so
+neither is committed.
+
+`04_training_process.py` also writes `lamini_docs_3_steps/` (local
+checkpoints). `05_evaluation.py` looks for an optional
+`lm-evaluation-harness/` clone next to the scripts.
 
 Credentials live in a single `.env` at the **repository root** (one level above
 this folder), so every script in the repository shares it:
@@ -44,7 +65,8 @@ this folder), so every script in the repository shares it:
 ai-engineer-roadmap/
 ├── .env                          # real credentials (not committed)
 └── 02_finetuning/
-    └── 01_finetuned_vs_non_finetuned.py
+    ├── 01_finetuned_vs_non_finetuned.py
+    └── 04_training_process.py
 ```
 
 ## First-time setup
@@ -87,7 +109,7 @@ uv pip install -r requirements.txt
 ### What each step does
 
 **`cd ~/code/ai-engineer-roadmap/02_finetuning`** moves into the folder that
-contains the script. The environment is created here, next to the code it is
+contains the scripts. The environment is created here, next to the code it is
 used for.
 
 **`python3 -m venv .venv`** (or **`uv venv --python 3.12 .venv`**) creates a
@@ -103,13 +125,20 @@ requirements.txt`**) installs the pinned packages into `.venv/`:
 
 - `lamini==2.5.7` — the client used to call Lamini models. This is the last
   release that still exposes `BasicModelRunner` and whose internals agree with
-  each other. `3.0.x` is broken for this class, `3.0.5+` removed it, and
-  `3.4.4+` declares a `umap` dependency that does not exist on PyPI.
+  each other. Do not upgrade: `3.0.x` is broken for this class, `3.0.5+`
+  removed it, and `3.4.4+` declares a `umap` dependency that does not exist on
+  PyPI.
 - `python-dotenv==1.2.4` — loads the credentials from the `.env` file into the
   environment.
-- `transformers==4.46.3` — tokenizers, model classes, and `Trainer`.
-- `torch==2.9.0` — the deep-learning backend used by `transformers`.
-- `accelerate==1.2.1` — required by the Transformers `Trainer`.
+- `pandas==3.0.6` / `jsonlines==4.0.0` / `datasets==3.6.0` — local data
+  inspection and train/test splits. `pandas` stays on 3.0.6 because
+  `lamini==2.5.7` requires `numpy<2`, which newer pandas does not.
+- `transformers==4.57.6` — tokenizers, model classes, and `Trainer` (latest
+  4.x; 5.x is a different API).
+- `huggingface-hub==0.34.0` / `pyarrow==17.0.0` — required by `transformers`
+  and `datasets`.
+- `torch==2.15.0` — the deep-learning backend used by `transformers`.
+- `accelerate==1.16.0` — required by the Transformers `Trainer`.
 - `tqdm==4.70.1` — progress bars in the evaluation script.
 
 `requirements.txt` is the Python equivalent of `package.json` in a Node
@@ -121,7 +150,11 @@ be recreated elsewhere.
 
 ## Credentials: keep them secret
 
-The script reads two values from environment variables:
+`01_finetuned_vs_non_finetuned.py` requires two values from environment
+variables. `04_training_process.py` uses the same values for its hosted
+Lamini section and skips that section when they are missing. The other
+scripts do not call Lamini; they download models and datasets from the
+Hugging Face Hub.
 
 - `POWERML__PRODUCTION__URL`
 - `POWERML__PRODUCTION__KEY`
@@ -136,14 +169,14 @@ cd ~/code/ai-engineer-roadmap
 nano .env
 ```
 
-It should contain only these two lines:
+Add these lines (alongside any other keys this repo already uses):
 
 ```dotenv
 POWERML__PRODUCTION__URL=https://api.lamini.ai
 POWERML__PRODUCTION__KEY=your-secret-key
 ```
 
-Do not use `none` or another placeholder as the URL. If the script reports
+Do not use `none` or another placeholder as the URL. If `01` reports
 `Missing or placeholder Lamini credentials`, the value is still empty or `none`.
 
 Rules for this file:
@@ -151,12 +184,12 @@ Rules for this file:
 - `.env` is listed in the repository-root `.gitignore`, so Git ignores it.
 - There is no committed template: never put real keys in a tracked file.
 - If you ever commit a key by accident, rotate it immediately in Lamini.
-- The script loads the root `.env` explicitly with
-  `load_dotenv(Path(__file__).resolve().parent.parent / ".env")`, so it works
-  regardless of which directory you run it from.
+- `01` and `04` load the root `.env` explicitly with
+  `load_dotenv(Path(__file__).resolve().parent.parent / ".env")`, so they
+  work regardless of which directory you run them from.
 
-The first script stops with a clear error if either value is missing or still
-set to `none`.
+`01_finetuned_vs_non_finetuned.py` stops with a clear error if either value
+is missing or still set to `none`.
 
 ## Running the scripts
 
@@ -169,16 +202,22 @@ source .venv/bin/activate
 # Requires valid Lamini credentials in the repository-root .env
 python 01_finetuned_vs_non_finetuned.py
 
-# Local data inspection and preparation
+# Local data inspection; first run downloads C4 and Hub datasets
 python 02_finetuning_data.py
 python 03_data_preparation.py
 
-# Short local training run; Lamini-hosted parts are skipped without credentials
+# Short local training of pythia-70m; writes lamini_docs_3_steps/
+# Lamini-hosted parts are skipped without credentials
 python 04_training_process.py
 
-# Exact-match evaluation; lm-evaluation-harness is optional
+# Exact-match eval of lamini/lamini_docs_finetuned; harness is optional
 python 05_evaluation.py
 ```
+
+`02`–`05` download models or datasets from the Hugging Face Hub on first
+run (C4, `EleutherAI/pythia-70m`, `lamini/lamini_docs`,
+`lamini/lamini_docs_finetuned`, and related Hub datasets). `01` and the
+hosted section of `04` call Lamini instead.
 
 `05_evaluation.py` skips the optional benchmark unless `lm_eval` is installed
 or a local `lm-evaluation-harness/` directory exists next to it.
@@ -212,6 +251,9 @@ python 02_finetuning_data.py
 python 03_data_preparation.py
 deactivate
 ```
+
+Those two scripts need no Lamini credentials. Run `01` only when the root
+`.env` has real Lamini values.
 
 ## Virtual environment rules
 
@@ -252,6 +294,9 @@ deactivate
   usually `https://api.lamini.ai`.
 - `401` or authentication errors from Lamini: the URL or key in the root `.env`
   is wrong, or the key was rotated.
+- Hugging Face Hub download errors on `02`–`05`: those scripts fetch C4,
+  `EleutherAI/pythia-70m`, or Lamini Hub datasets/models on first run. Check
+  the network, then retry.
 
 ## Managing dependencies
 
@@ -268,12 +313,12 @@ pip install -r requirements.txt
 # or: uv pip install -r requirements.txt
 ```
 
-If you add or upgrade a package, update the file from the activated environment:
+If you add a package you intend to keep, add its pinned version to
+`requirements.txt` by hand. Prefer a short list of **direct** imports
+(`lamini`, `python-dotenv`, `jsonlines`, `pandas`, `datasets`, `transformers`,
+`torch`, `accelerate`, `tqdm`) over `pip freeze`, which also dumps transitive
+packages.
 
-```bash
-pip freeze > requirements.txt
-# or: uv pip freeze > requirements.txt
-```
-
-Keep the `lamini` and `python-dotenv` versions pinned as shown; newer `lamini`
-releases break the `BasicModelRunner` import used by this script.
+Keep `lamini==2.5.7`. Newer `lamini` releases break the `BasicModelRunner`
+import used by these scripts. Keep `transformers` on 4.x; 5.x changes the
+Trainer API this course uses.

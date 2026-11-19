@@ -1,29 +1,29 @@
-import openai
 import os
 import panel as pn  # GUI
-
 from dotenv import load_dotenv, find_dotenv
-_ = load_dotenv(find_dotenv()) # read local .env file
+from openai import OpenAI
 
-openai.api_key  = os.getenv('OPENAI_API_KEY')
+_ = load_dotenv(find_dotenv())  # read local .env file
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
         # temperature=1,  # course uses 0 for deterministic output; gpt-5-nano only allows 1
     )
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content
 
 def get_completion_from_messages(messages, model="gpt-5-nano", temperature=1):
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=temperature, # this is the degree of randomness of the model's output
+        # temperature=temperature,  # course uses 0; gpt-5-nano only allows default 1
     )
 #   print(str(response.choices[0].message))
-    return response.choices[0].message["content"]
+    return response.choices[0].message.content
 
 def collect_messages(_):
     prompt = inp.value_input

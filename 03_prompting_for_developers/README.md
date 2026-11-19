@@ -1,22 +1,24 @@
 # Prompting for Developers Course Examples
 
 This folder holds the coding examples for *ChatGPT Prompt Engineering for
-Developers* (DeepLearning.AI / OpenAI). The scripts keep the course's
-`openai.ChatCompletion.create` helper and prompt text, one file per lesson
-with a notebook:
+Developers* (DeepLearning.AI / OpenAI). The scripts keep the course's helper
+and prompt text, updated to the current OpenAI Python SDK
+(`client.chat.completions.create`), one `.py` file per course notebook:
 
 - `01_guidelines.py` — clear instructions (delimiters, structured output,
-  conditionals, few-shot) and giving the model time to think.
+  conditionals, few-shot), giving the model time to think, and a
+  hallucination prompt.
 - `02_iterative.py` — iterative prompt development: marketing copy from a
   product fact sheet, then length, audience, IDs, and an HTML dimensions table.
 - `03_summarizing.py` — summaries with a word limit, a topic focus, extract
   instead of summarize, and a loop over several reviews.
-- `04_inferring.py` — sentiment, emotions, entity extraction, multi-field JSON,
-  topic lists, and a zero-shot topic alert.
-- `05_transforming.py` — translation, tone, format conversion, and proofreading
-  (including a `redlines` diff).
-- `06_expanding.py` — a sentiment-conditioned customer email; temperature
-  controls how varied the reply is.
+- `04_inferring.py` — sentiment, anger, emotions, entity extraction,
+  multi-field JSON, topic lists, and a zero-shot topic alert.
+- `05_transforming.py` — translation, tone, JSON-to-HTML conversion, and
+  proofreading (including a `redlines` diff and an APA-style rewrite).
+- `06_expanding.py` — a sentiment-conditioned customer email. The course used
+  `temperature` to vary how creative the reply is; that argument is commented
+  out here because `gpt-5-nano` only allows the default (`1`).
 - `07_chatbot.py` — chat-completions roles (`system` / `user` / `assistant`),
   conversation context, and a Panel OrderBot UI that can emit a JSON order
   summary.
@@ -93,8 +95,9 @@ You will usually see `(.venv)` in your prompt.
 **`pip install -r requirements.txt`** installs the pinned packages into
 `.venv/`:
 
-- `openai==0.28.1` — the course client. This version still has
-  `openai.ChatCompletion.create`. `openai` 1.x replaced that API.
+- `openai==3.55.1` — current OpenAI Python client (`OpenAI()` plus
+  `client.chat.completions.create`). The course notebooks used the pre-1.0
+  `openai.ChatCompletion.create` API, which this version does not have.
 - `python-dotenv==1.2.4` — loads `OPENAI_API_KEY` from `.env`.
 - `ipython==9.18.1` — `IPython.display` used by the iterative and transforming
   scripts to render HTML or Markdown.
@@ -157,9 +160,9 @@ python 06_expanding.py
 python 07_chatbot.py
 ```
 
-`01`–`06` print completions to the terminal. Each file may have extra
-examples commented out; uncomment one block at a time if you want to replay a
-specific prompt.
+`01`–`06` print completions to the terminal. By default each file runs its
+last uncommented example; earlier ones sit in a triple-quoted block.
+Uncomment one block at a time if you want to replay a specific prompt.
 
 `07_chatbot.py` starts a local Panel server and opens a browser (OrderBot).
 Chat there, then stop the server (Ctrl+C in the terminal). After that, the
@@ -223,10 +226,12 @@ The notebooks wrap long strings with `\` at the end of the line. A space after
 that backslash (`\ `) is an invalid escape on Python 3.14. The `.py` files keep
 the course wraps but end those lines with `\` and no trailing space.
 
-The notebooks used `model="gpt-3.5-turbo"` and `temperature=0`. This folder
-calls `gpt-5-nano`. That model only allows the default temperature (`1`), so
-`temperature=0` is commented out in most `get_completion` helpers. Scripts that
-still pass `temperature` (`06_expanding.py`, `07_chatbot.py`) use `1`.
+The notebooks used `openai.ChatCompletion.create`, `model="gpt-3.5-turbo"`,
+and `temperature=0`. This folder uses `OpenAI()` and
+`client.chat.completions.create`, and calls `gpt-5-nano`. That model only
+allows the default temperature (`1`), so `temperature` is commented out in the
+helpers (including the low-vs-high comparison in `06_expanding.py`).
+Completions are objects: `response.choices[0].message.content`.
 
 `02_iterative.py` and `05_transforming.py` import `IPython.display`. In a
 notebook that renders HTML; from the terminal you still get the text (and
@@ -243,14 +248,14 @@ sometimes raw markup). That is expected.
 - `ModuleNotFoundError: No module named 'IPython'` / `'redlines'` / `'panel'`:
   install with `pip install -r requirements.txt` inside the activated
   environment.
-- `AttributeError: module 'openai' has no attribute 'ChatCompletion'`: you
-  have `openai` 1.x. This folder needs `openai==0.28.1`.
+- `APIRemovedInV1` / `openai.ChatCompletion`: leftover pre-1.0 syntax. Use
+  `client = OpenAI(...)` and `client.chat.completions.create`.
 - `SyntaxWarning: "\ " is an invalid escape sequence`: a course wrap still
   has a space after `\`. Remove that trailing space so the line ends with `\`.
-- `InvalidRequestError: 'temperature' does not support 0 with this model`
+- `BadRequestError: 'temperature' does not support 0 with this model`
   (or a value other than `1`): `gpt-5-nano` rejects non-default temperature.
-  Leave `temperature=0` commented out, or pass `1`.
-- `InvalidRequestError` / `AuthenticationError` / `401`: `OPENAI_API_KEY` is
+  Leave `temperature` commented out, or pass `1`.
+- `BadRequestError` / `AuthenticationError` / `401`: `OPENAI_API_KEY` is
   missing, empty, or wrong in the root `.env`.
 - Completions never print and there is no traceback: `find_dotenv()` did not
   find the root `.env`. `cd` into this folder (or the repo) and run again.
@@ -276,5 +281,6 @@ If you add a package you intend to keep, add its pinned version to
 (`openai`, `python-dotenv`, `ipython`, `redlines`, `panel`) over `pip freeze`,
 which also dumps transitive packages.
 
-Keep `openai==0.28.1`. Newer releases remove `ChatCompletion.create`, which
-these course scripts still use.
+Keep `openai==3.55.1` (or another 1.x/3.x release). Do not pin `0.28.x`; that
+old client is what the course notebooks used, and it does not match this
+folder's `OpenAI()` client.

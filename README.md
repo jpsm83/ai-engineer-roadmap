@@ -246,7 +246,7 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 - [x] ✅ `Reasoning with o1` (OpenAI) — 1h44m — prompting reasoning models, sampling intuition.
 
 **3.2 LLM integration**
-- [ ] ✅ `Building Systems with the ChatGPT API` (OpenAI) — ~1h — chat completions, structured outputs, moderation.
+- [x] ✅ `Building Systems with the ChatGPT API` (OpenAI) — ~1h — chat completions, structured outputs, moderation.
 - [ ] ✅ `LangChain for LLM Application Development` (LangChain) — ~1h30m — chains, memory, agents.
 - [ ] ✅ `Functions, Tools and Agents with LangChain` (LangChain) — ~1h — tool/function calling.
 - [ ] ✅ `LangChain: Chat with Your Data` (LangChain) — ~1h — RAG with LangChain (preview of Stage 4).
@@ -623,7 +623,7 @@ Deploy Portfolio Project 4 with CI eval gates, tracing, and a rollback plan.
 ## 🟢 OPTIONAL DEPTH: DeepLearning.AI — Stage 9 (Weeks 17+)
 
 - [ ] ✅ `Post-training of LLMs` (UW / NexusFlow) — 1h26m — SFT, DPO, online RL (concepts only).
-- [ ] ✅ `Reasoning with o1` (OpenAI) — 1h44m *(repeat for depth)*.
+- [x] ✅ `Reasoning with o1` (OpenAI) — 1h44m *(repeat for depth)*.
 - [ ] ✅ `Introducing Multimodal Llama 3.2` (Meta) — 1h39m — only if your product is multimodal.
 - [ ] ✅ `Voice for AI Agents and Applications` (Vocal Bridge) — 1h26m — only if voice is in scope.
 - [ ] ✅ `Document AI: From OCR to Agentic Doc Extraction` (LandingAI) — 3h11m — useful for ingestion-heavy products.

@@ -164,7 +164,7 @@ A: Growing a short input (notes, a review, a bullet list) into a longer piece (e
 A: Give the facts to use, the action (thank vs. apologize), the tone, and any required signature or disclaimer, and tell the model to reuse specific details from the source. Use this capability responsibly: do not spam, and disclose when a message is from an AI.
 
 **Q: What is temperature?**
-A: The sampling randomness of the completion. **`temperature=0`** always picks the most likely next token (stable, repeatable — use this for production tasks). Higher values (e.g., `0.7`) pick less likely tokens: more variety, more drift from the brief.
+A: The sampling randomness of the completion. **`temperature=0`** always picks the most likely next token (stable, repeatable — use this for production tasks). Higher values (e.g., `0.7`) pick less likely tokens: more variety, more drift from the brief. `gpt-5-nano` only allows the default temperature (`1`), so the course's `0` is commented out in these scripts.
 
 ---
 
@@ -173,7 +173,7 @@ A: The sampling randomness of the completion. **`temperature=0`** always picks t
 ### Chat format
 
 **Q: How does a chat API differ from a single prompt?**
-A: You send a list of **messages** instead of one string. Each message has a role and content. The model replies to the whole list.
+A: You send a list of **messages** instead of one string. Each message has a role and content. Call `client.chat.completions.create` (current OpenAI Python SDK) and read `response.choices[0].message.content`. The course notebooks used the removed `openai.ChatCompletion.create` API.
 
 **Q: What does each role do?**
 A: **`system`** sets persona and standing rules (how to behave for the whole conversation). **`user`** is the human turn. **`assistant`** is a previous model turn you are feeding back.

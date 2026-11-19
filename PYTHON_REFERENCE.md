@@ -342,7 +342,7 @@ package per line, usually pinned to an exact version:
 ```text
 pandas==3.0.6
 datasets==3.6.0
-transformers==4.46.3
+transformers==4.57.6
 ```
 
 Install every package listed in that file with:
@@ -359,7 +359,7 @@ What this command does:
 - `-r` means **read** package names from a file instead of typing each one on
   the command line (`pip install openai python-dotenv ...`).
 - `requirements.txt` is that file: one package per line, usually pinned
-  (`openai==0.28.1`).
+  (`openai==3.55.1`).
 
 Use it after you create and activate a `.venv`, or when you clone the project
 on another machine and need the same libraries. Activate first so packages go
