@@ -25,7 +25,7 @@ A: **Models** (LLMs, chat models, embeddings), **prompts** (templates and parser
 A: Direct calls work for one prompt. LangChain adds reusable **prompt templates**, a common model interface so you can switch providers, and **output parsers** so code receives structured data instead of a raw string.
 
 **Q: How do you call a chat model in LangChain?**
-A: `ChatOpenAI(temperature=0.0)` builds a chat model. Pass a list of messages (from a prompt template) and read the returned message `content`. Load `OPENAI_API_KEY` from the environment (e.g., `python-dotenv`); do not hard-code it.
+A: `ChatOpenAI(temperature=0.0)` builds a chat model. Pass a list of messages with `chat.invoke(messages)` and read `response.content`. Load `OPENAI_API_KEY` from the environment (e.g., `python-dotenv`); do not hard-code it. The model object is not callable — `chat(...)` raises `TypeError`.
 
 **Q: What does `temperature` control?**
 A: Sampling randomness. Use `temperature=0.0` when you need a stable, repeatable completion (extraction, routing, eval). Raise it when you want more varied wording.
@@ -37,6 +37,9 @@ A: A reusable string with `{variables}` that you fill at run time. `ChatPromptTe
 
 **Q: Why use a template instead of an f-string?**
 A: The same instructions can run on many inputs and models without rewriting the prompt. Templates also pair with parsers: you inject format instructions as another variable rather than editing the text by hand.
+
+**Q: What is the order of creation and execution for a LangChain prompt?**
+A: Create objects first, then run them: (1) `chat = ChatOpenAI(model=..., temperature=...)`, (2) write a template string with `{placeholders}`, (3) `ChatPromptTemplate.from_template(template)`, (4) `messages = prompt.format_messages(...)` to fill placeholders, (5) `response = chat.invoke(messages)`, (6) read `response.content` (a string). For structured output, also (7) define `ResponseSchema(name, description)` fields, (8) `StructuredOutputParser.from_response_schemas(...)`, (9) put `parser.get_format_instructions()` into the template as `{format_instructions}`, (10) `parser.parse(response.content)` to get a `dict`.
 
 ### Output parsers
 
@@ -207,8 +210,9 @@ A: The project moves quickly. The ideas (templates, parsers, memory, chains, ret
 | Term | Meaning |
 | --- | --- |
 | LangChain | Open-source framework to compose LLM apps from modular components |
-| `ChatOpenAI` | Chat-model wrapper; `temperature=0.0` for deterministic calls |
+| `ChatOpenAI` | Chat-model wrapper; call with `.invoke(messages)`, not `chat(...)` |
 | Prompt template | Reusable prompt with `{variables}`; `ChatPromptTemplate.from_template` |
+| Prompt workflow | model → template → `format_messages` → `invoke` → `content` (then parse) |
 | Output parser | Turns model text into a typed object (`StructuredOutputParser`) |
 | `ResponseSchema` | Name plus description of one field to extract |
 | Memory | Stored turns injected into the next prompt; the API itself is stateless |
