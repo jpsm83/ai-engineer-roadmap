@@ -12,6 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import lamini
 from lamini import BasicModelRunner
+from rich import print
 
 ## Load the shared .env from the repository root, regardless of the current
 ## working directory.

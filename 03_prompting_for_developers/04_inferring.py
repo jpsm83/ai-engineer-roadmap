@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
+from rich import print
 
 _ = load_dotenv(find_dotenv())  # read local .env file
 

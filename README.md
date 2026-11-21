@@ -145,7 +145,6 @@ Write a one-page decision guide — "When do I prompt, when do I add RAG, when d
 You already program. Treat this as an AI-idiom speedrun, not a from-zero course.
 
 - [x] 💳 `Python` — FreeCodeCamp.
-- [ ] *(optional)* `AI Python for Beginners` — only if you want a structured refresher.
 
 ### 📚 Resource Hub (Phase 1)
 
@@ -182,9 +181,6 @@ Concepts, not training. Prefer docs and short videos over long courses.
 
 - [x] ✅ `Attention in Transformers: Concepts and Code in PyTorch` (StatQuest) — 1h16m — watch for intuition; you won't implement it in production.
 - [x] ✅ `Finetuning Large Language Models` (Lamini) — ~1h — understand full fine-tune vs. PEFT/LoRA **as a decision**, not a skill.
-- [ ] 💳 *(optional)* `Generative AI with Large Language Models` (AWS) — 13h18m — only if you want the lifecycle narrative and Bedrock context.
-
-**Drop from the old plan:** `Transformers in Practice` (11 h), `Build and Train an LLM with JAX`, `Deep Learning Specialization`. These serve the ML path.
 
 ### 📚 Resource Hub (Phase 2)
 
@@ -210,15 +206,15 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 ### 🧠 Topic Checklist
 
 #### 3.1 Prompt Engineering
-- [ ] Instruction-following principles; temperature/top-p/top-k in practice
-- [ ] System instructions & role prompting
-- [ ] Chain of Thought (CoT) & ReAct patterns
-- [ ] Few-shot vs. zero-shot; example selection
-- [ ] Prompt evaluation & iteration (treat prompts as code under test)
-- [ ] Context engineering: what goes in, in what order, and why
+- [x] Instruction-following principles; temperature/top-p/top-k in practice
+- [x] System instructions & role prompting
+- [x] Chain of Thought (CoT) & ReAct patterns
+- [x] Few-shot vs. zero-shot; example selection
+- [x] Prompt evaluation & iteration (treat prompts as code under test)
+- [x] Context engineering: what goes in, in what order, and why
 
 #### 3.2 LLM Integration
-- [ ] OpenAI API (Chat Completions, structured outputs, tool use)
+- [x] OpenAI API (Chat Completions, structured outputs, tool use)
 - [ ] Anthropic Claude API (Messages API, tool use)
 - [ ] One cloud abstraction layer (Bedrock, Vertex, or Azure OpenAI) — auth, cost, latency
 - [ ] LiteLLM or equivalent model-agnostic abstraction (provider switching, fallbacks)
@@ -247,7 +243,7 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 
 **3.2 LLM integration**
 - [x] ✅ `Building Systems with the ChatGPT API` (OpenAI) — ~1h — chat completions, structured outputs, moderation.
-- [ ] ✅ `LangChain for LLM Application Development` (LangChain) — ~1h30m — chains, memory, agents.
+- [x] ✅ `LangChain for LLM Application Development` (LangChain) — ~1h30m — chains, memory, agents.
 - [ ] ✅ `Functions, Tools and Agents with LangChain` (LangChain) — ~1h — tool/function calling.
 - [ ] ✅ `LangChain: Chat with Your Data` (LangChain) — ~1h — RAG with LangChain (preview of Stage 4).
 - [ ] ✅ `Serverless LLM Apps with Amazon Bedrock` (AWS) — ~1h — cloud provider auth, multi-model, cost/latency.

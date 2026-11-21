@@ -17,6 +17,7 @@ import datasets
 import jsonlines
 import pandas as pd
 from datasets import load_dataset
+from rich import print
 
 DATA_DIR = Path(__file__).resolve().parent
 INSTRUCTION_FILE = DATA_DIR / "lamini_docs.jsonl"

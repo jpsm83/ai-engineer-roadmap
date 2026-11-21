@@ -6,3 +6,4 @@ python-dotenv==1.2.4
 redlines==0.6.2
 termcolor==3.3.0
 tiktoken==0.14.0
+rich==15.0.0

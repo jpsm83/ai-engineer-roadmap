@@ -22,6 +22,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from rich import print
 
 DATA_DIR = Path(__file__).resolve().parent
 

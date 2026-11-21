@@ -11,6 +11,7 @@ from pprint import pprint
 import datasets
 import pandas as pd
 from transformers import AutoTokenizer
+from rich import print
 
 MODEL_NAME = "EleutherAI/pythia-70m"
 DATA_DIR = Path(__file__).resolve().parent

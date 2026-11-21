@@ -34,6 +34,7 @@ from transformers import (
     Trainer as HFTrainer,
     TrainingArguments,
 )
+from rich import print
 
 logger = logging.getLogger(__name__)
 

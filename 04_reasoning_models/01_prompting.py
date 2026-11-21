@@ -19,6 +19,7 @@ from pathlib import Path
 from IPython.display import Markdown, HTML
 from IPython.display import display as ipython_display
 from openai import OpenAI
+from rich import print
 
 def _in_notebook():
     try:

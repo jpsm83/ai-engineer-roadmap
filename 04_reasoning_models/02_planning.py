@@ -12,6 +12,7 @@ openai_api_key = os.getenv('OPENAI_API_KEY')
 import copy
 import json
 from openai import OpenAI
+from rich import print
 
 client = OpenAI(api_key=openai_api_key)
 NON_REASONING_MODEL = 'gpt-6-luna'

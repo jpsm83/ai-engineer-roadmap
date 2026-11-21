@@ -11,6 +11,7 @@ can be followed by hand.
 import torch ## torch let's us create tensors and also provides helper functions
 import torch.nn as nn ## torch.nn gives us nn.module() and nn.Linear()
 import torch.nn.functional as F # This gives us the softmax()
+from rich import print
 
 class SelfAttention(nn.Module): 
                             
