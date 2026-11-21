@@ -1,5 +1,7 @@
 # Reasoning with reasoning model — Q&A
 
+---
+
 ## Part 1 — Introduction to reasoning model
 
 ### Reasoning models

@@ -1,5 +1,7 @@
 # Building Systems with the ChatGPT API — Q&A
 
+---
+
 ## Part 1 — Introduction
 
 ### Prompt-based systems

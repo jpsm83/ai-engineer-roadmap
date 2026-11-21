@@ -1,5 +1,7 @@
 # Attention in Transformers: Concepts and Code in PyTorch — Q&A
 
+---
+
 ## Part 1 — Foundations
 
 ### Attention and Transformers
