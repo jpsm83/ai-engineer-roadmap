@@ -1,30 +1,41 @@
+import csv
 import warnings
 # account for deprecation of LLM model
 import datetime
-import panel as pn
 from IPython.display import Markdown
 from langchain_classic.chains import RetrievalQA
 from langchain_classic.indexes import VectorstoreIndexCreator
-from langchain_community.document_loaders import CSVLoader
-from langchain_community.vectorstores import DocArrayInMemorySearch
+from langchain_core.document_loaders import BaseLoader
+from langchain_core.documents import Document
+from langchain_core.vectorstores import InMemoryVectorStore
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from dotenv import load_dotenv, find_dotenv
 from rich import print
-
-pn.extension()
+from rich.markdown import Markdown as RichMarkdown
 
 _ = load_dotenv(find_dotenv()) # read local .env file
 
+class CSVLoader(BaseLoader):
+    """Load a CSV file as one Document per row (column: value lines)."""
+
+    def __init__(self, file_path, encoding="utf-8"):
+        self.file_path = file_path
+        self.encoding = encoding
+
+    def lazy_load(self):
+        with open(self.file_path, newline="", encoding=self.encoding) as csvfile:
+            for i, row in enumerate(csv.DictReader(csvfile)):
+                content = "\n".join(f"{k}: {v}" for k, v in row.items())
+                yield Document(
+                    page_content=content,
+                    metadata={"source": str(self.file_path), "row": i},
+                )
+
 warnings.filterwarnings('ignore')
 
-_DISPLAY_PANES = []
-
 def display(obj):
-    if isinstance(obj, Markdown):
-        text = obj.data or ""
-    else:
-        text = str(obj)
-    _DISPLAY_PANES.append(pn.pane.Markdown(text, sizing_mode="stretch_width"))
+    text = obj.data if isinstance(obj, Markdown) else str(obj)
+    print(RichMarkdown(text or ""))
 
 # Get the current date
 current_date = datetime.datetime.now().date()
@@ -38,43 +49,39 @@ if current_date > target_date:
 else:
     llm_model = "gpt-6-luna"
 
+llm = ChatOpenAI(temperature=1, model=llm_model)
+
 file = 'OutdoorClothingCatalog_1000.csv'
 loader = CSVLoader(file_path=file)
 
 embeddings = OpenAIEmbeddings()
 
 index = VectorstoreIndexCreator(
-    vectorstore_cls=DocArrayInMemorySearch,
+    vectorstore_cls=InMemoryVectorStore,
     embedding=embeddings,
 ).from_loaders([loader])
 
 query ="Please list all your shirts with sun protection \
 in a table in markdown and summarize each one."
 
-llm_replacement_model = ChatOpenAI(temperature=1, model=llm_model)
+# response = index.query(query, llm = llm)
 
-response = index.query(query, 
-                       llm = llm_replacement_model)
-
-display(Markdown(response))
+# display(Markdown(response))
 
 # Step By Step
 
-loader = CSVLoader(file_path=file)
-
 docs = loader.load()
 
-print(docs[0])
+# print(docs[0])
 
-embeddings = OpenAIEmbeddings()
 
-embed = embeddings.embed_query("Hi my name is Harrison")
+embed = embeddings.embed_query("Hi my name is Joao")
 
-print(len(embed))
+# print(len(embed))
 
-print(embed[:5])
+# print(embed[:5])
 
-db = DocArrayInMemorySearch.from_documents(
+db = InMemoryVectorStore.from_documents(
     docs, 
     embeddings
 )
@@ -83,20 +90,18 @@ query = "Please suggest a shirt with sunblocking"
 
 docs = db.similarity_search(query)
 
-print(len(docs))
+# print(len(docs))
 
-print(docs[0])
+# print(docs[0])
 
 retriever = db.as_retriever()
 
-llm = ChatOpenAI(temperature = 1, model=llm_model)
-
 qdocs = "".join([docs[i].page_content for i in range(len(docs))])
 
-response = llm.invoke(f"{qdocs} Question: Please list all your \
-shirts with sun protection in a table in markdown and summarize each one.").content
+# response = llm.invoke(f"{qdocs} Question: Please list all your \
+# shirts with sun protection in a table in markdown and summarize each one.").content
 
-display(Markdown(response))
+# display(Markdown(response))
 
 qa_stuff = RetrievalQA.from_chain_type(
     llm=llm, 
@@ -112,14 +117,13 @@ response = qa_stuff.run(query)
 
 display(Markdown(response))
 
-response = index.query(query, llm=llm)
+response2 = index.query(query, llm=llm)
 
+display(Markdown(response2))
+
+'''
 index = VectorstoreIndexCreator(
-    vectorstore_cls=DocArrayInMemorySearch,
+    vectorstore_cls=InMemoryVectorStore,
     embedding=embeddings,
 ).from_loaders([loader])
-
-# In a notebook, display(Markdown(...)) renders inline. From a .py file
-# you need .show() to start a local server and open the browser.
-dashboard = pn.Column(*_DISPLAY_PANES)
-dashboard.show()
+'''
