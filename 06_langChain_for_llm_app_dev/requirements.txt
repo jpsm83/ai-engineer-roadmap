@@ -3,9 +3,14 @@ python-dotenv==1.2.4
 langchain==1.5.2
 langchain-openai==1.8.5
 langchain-classic==1.0.8
+langchain-community==0.4.2
+langchain-experimental==0.4.2
 pandas==3.1.1
 tiktoken==0.14.0
 rich==15.0.0
 ipython==9.18.1
 panel==1.10.0
 greenlet==3.5.6
+wikipedia==1.4.0
+numexpr==2.14.2
+mypy-extensions==1.2.0

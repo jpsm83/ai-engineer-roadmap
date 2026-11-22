@@ -5,6 +5,7 @@ import datetime
 from langchain_classic.chains import RetrievalQA
 from langchain_classic.indexes import VectorstoreIndexCreator
 from langchain_classic.evaluation.qa import QAGenerateChain, QAEvalChain
+from langchain_classic.output_parsers.regex import RegexParser
 from langchain_core.document_loaders import BaseLoader
 from langchain_core.documents import Document
 from langchain_core.globals import set_debug
@@ -73,7 +74,7 @@ qa = RetrievalQA.from_chain_type(
 
 # Coming up with test datapoints
 
-print(data[10])
+# print(data[10])
 
 # Hard-coded examples
 
@@ -92,29 +93,44 @@ examples = [
 
 # LLM-Generated examples
 
-example_gen_chain = QAGenerateChain.from_llm(ChatOpenAI(model=llm_model))
+# Default parser expects "ANSWER: ..." on one line; newer models often
+# put a newline (or a bullet list) after ANSWER:.
+example_gen_chain = QAGenerateChain.from_llm(
+    ChatOpenAI(model=llm_model),
+    output_parser=RegexParser(
+        regex=r"(?s)QUESTION:\s*(.*?)\n+ANSWER:\s*(.*)",
+        output_keys=["query", "answer"],
+    ),
+)
 
 # the warning below can be safely ignored
 
 new_examples = example_gen_chain.apply_and_parse(
-    [{"doc": t} for t in data[:5]]
+    [{"doc": t.page_content} for t in data[:5]]
 )
+new_examples = [
+    {
+        "query": example["qa_pairs"]["query"].strip(),
+        "answer": example["qa_pairs"]["answer"].strip(),
+    }
+    for example in new_examples
+]
 
-print(new_examples[0])
+# print(new_examples[0])
 
-print(data[0])
+# print(data[0])
 
 # Combine examples
 
 examples += new_examples
 
-print(qa.run(examples[0]["query"]))
+# print(qa.run(examples[0]["query"]))
 
 # Manual Evaluation
 
 set_debug(True)
 
-print(qa.run(examples[0]["query"]))
+# print(qa.run(examples[0]["query"]))
 
 # Turn off the debug mode
 set_debug(False)
@@ -123,7 +139,8 @@ set_debug(False)
 
 predictions = qa.apply(examples)
 
-llm = ChatOpenAI(temperature=0, model=llm_model)
+# print(predictions)
+
 eval_chain = QAEvalChain.from_llm(llm)
 
 graded_outputs = eval_chain.evaluate(examples, predictions)
@@ -133,7 +150,7 @@ for i, eg in enumerate(examples):
         f"[bold]Question:[/bold] {predictions[i]['query']}\n"
         f"[bold]Real Answer:[/bold] {predictions[i]['answer']}\n"
         f"[bold]Predicted Answer:[/bold] {predictions[i]['result']}\n"
-        f"[bold]Predicted Grade:[/bold] {graded_outputs[i]['text']}",
+        f"[bold]Predicted Grade:[/bold] {graded_outputs[i][eval_chain.output_key]}",
         title=f"Example {i}",
     ))
 
