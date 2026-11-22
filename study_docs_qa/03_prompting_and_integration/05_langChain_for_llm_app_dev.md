@@ -25,10 +25,10 @@ A: **Models** (LLMs, chat models, embeddings), **prompts** (templates and parser
 A: Direct calls work for one prompt. LangChain adds reusable **prompt templates**, a common model interface so you can switch providers, and **output parsers** so code receives structured data instead of a raw string.
 
 **Q: How do you call a chat model in LangChain?**
-A: `ChatOpenAI(temperature=0.0)` builds a chat model. Pass a list of messages with `chat.invoke(messages)` and read `response.content`. Load `OPENAI_API_KEY` from the environment (e.g., `python-dotenv`); do not hard-code it. The model object is not callable — `chat(...)` raises `TypeError`.
+A: `ChatOpenAI(model="gpt-5-nano", temperature=1)` from `langchain_openai` builds a chat model. Pass a list of messages with `chat.invoke(messages)` and read `response.content`. Load `OPENAI_API_KEY` from the environment (`python-dotenv`); do not hard-code it. The model object is not callable — `chat(...)` raises `TypeError`. The same file's direct call is `client.chat.completions.create`. `gpt-5-nano` only accepts temperature `1`. `06_agents.py` uses `gpt-4o-mini` at `temperature=1`.
 
 **Q: What does `temperature` control?**
-A: Sampling randomness. Use `temperature=0.0` when you need a stable, repeatable completion (extraction, routing, eval). Raise it when you want more varied wording.
+A: Sampling randomness. On models that allow it, `0` is the stable setting for extraction, routing, and eval, and a higher value varies the wording. These scripts pass `temperature=1` because `gpt-5-nano` rejects any other value. `03_chains.py` sets `temperature=0.9` on the review chain.
 
 ### Prompt templates
 
@@ -79,7 +79,7 @@ A: (1) `load_memory_variables({})` fills `{history}` in the default prompt. (2) 
 A: Call `memory.save_context({"input": "Hi"}, {"output": "What's up"})` as many times as you need, then inspect with `print(memory.buffer)` or `memory.load_memory_variables({})`. This is how you seed or test memory without an API call.
 
 **Q: How do you attach memory to a conversation?**
-A: `conversation = ConversationChain(llm=llm, memory=memory, verbose=True)`. Swap the memory object to change how history is kept; the chain API stays the same. `verbose=True` prints the filled prompt (including current `history`) via LangChain's stdout callback — it does not print `predict()`'s return value.
+A: `conversation = ConversationChain(llm=llm, memory=memory, verbose=True)` from `langchain_classic`. The memory classes live in `langchain_classic.memory`. Swap the memory object to change how history is kept; the chain API stays the same. The scripts advance a turn with `conversation.predict(input=...)`. `verbose=True` prints the filled prompt (including current `history`) — it does not print `predict()`'s return value.
 
 **Q: Where does stored history appear in the prompt?**
 A: In the default template: `Current conversation:\n{history}\nHuman: {input}\nAI:`. Empty memory leaves `{history}` blank; after `save_context` or a `predict` turn, `{history}` is the formatted `Human:` / `AI:` transcript (or a summary, depending on the memory class).
@@ -138,7 +138,7 @@ A: **Vector-store memory** retrieves the most relevant past spans by embedding s
 ### LLMChain and sequential chains
 
 **Q: What is a chain?**
-A: A sequence of calls to components (LLMs, prompts, other chains). The basic unit is `LLMChain(llm=..., prompt=...)`: fill the template, call the model, return the text. `chain.run(...)` or the named inputs execute it.
+A: A sequence of calls to components (LLMs, prompts, other chains). The basic unit is `LLMChain(llm=..., prompt=...)` from `langchain_classic.chains`: fill the template, call the model, return the text. The scripts execute it with `chain.run(...)`.
 
 **Q: What is `SimpleSequentialChain`?**
 A: A pipeline where each step has **one** input and **one** output, and the output of step `n` is the input of step `n+1`. `SimpleSequentialChain(chains=[chain_one, chain_two], verbose=True)` runs them in order.
@@ -170,13 +170,13 @@ A: Combine retrieval with an LLM: load documents, embed them, store vectors, ret
 A: A numeric **vector** that captures meaning. Texts with similar content have similar vectors, so you can rank documents by similarity to a query vector instead of by keyword overlap.
 
 **Q: What is the retrieval pipeline in this course?**
-A: (1) Load files (`CSVLoader`). (2) Embed each document (`OpenAIEmbeddings`). (3) Store vectors (`DocArrayInMemorySearch.from_documents`). (4) Embed the query. (5) `similarity_search(query)` (or `as_retriever()`). (6) Pass the hits plus the question to the LLM.
+A: (1) Load files with the local `CSVLoader`. (2) Embed each document (`OpenAIEmbeddings`). (3) Store vectors (`InMemoryVectorStore.from_documents`). (4) Embed the query. (5) `similarity_search(query)` (or `as_retriever()`). (6) Pass the hits plus the question to the LLM.
 
 **Q: What does `VectorstoreIndexCreator` do?**
-A: A shortcut that builds the vector store from loaders: `VectorstoreIndexCreator(vectorstore_cls=DocArrayInMemorySearch).from_loaders([loader])`, then `index.query(query)`.
+A: A shortcut that builds the vector store from loaders: `VectorstoreIndexCreator(vectorstore_cls=InMemoryVectorStore).from_loaders([loader])`, then `index.query(query)`.
 
 **Q: What is `RetrievalQA`?**
-A: A chain that runs retriever then LLM: `RetrievalQA.from_chain_type(llm=..., chain_type="stuff", retriever=..., verbose=True)`. The retriever supplies documents; the chain type decides how they are packed into prompts.
+A: A chain from `langchain_classic.chains` that runs retriever then LLM: `RetrievalQA.from_chain_type(llm=..., chain_type="stuff", retriever=..., verbose=True)`. The retriever supplies documents; the chain type decides how they are packed into prompts. The scripts call it with `qa_stuff.run(query)`.
 
 ### Chain types
 
@@ -204,7 +204,7 @@ A: Write a few `{query, answer}` examples by hand from the documents, and/or gen
 ### Manual evaluation
 
 **Q: How do you inspect what a chain actually sent to the model?**
-A: Set `langchain.debug = True`. Each step prints its inputs and outputs (retrieved docs, stuffed prompt, completion). Turn it off with `langchain.debug = False`.
+A: Call `set_debug(True)` from `langchain_core.globals`. Each step prints its inputs and outputs (retrieved docs, stuffed prompt, completion). Turn it off with `set_debug(False)`.
 
 ### LLM-assisted evaluation
 
@@ -224,13 +224,13 @@ A: A correct paraphrase fails string equality. The eval chain judges **meaning**
 A: A loop where the LLM is a **reasoning engine**: it chooses a **tool**, reads the tool's result, and repeats until it can answer. Unlike a chain, the number and order of steps are not fixed in advance.
 
 **Q: How do you create an agent with built-in tools?**
-A: `tools = load_tools(["llm-math", "wikipedia"], llm=llm)` then `initialize_agent(tools, llm, agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION, handle_parsing_errors=True, verbose=True)`. `llm-math` does calculation; Wikipedia looks up facts.
+A: `tools = load_tools(["llm-math", "wikipedia"], llm=llm)` then `initialize_agent(tools, llm, agent=AgentType.CHAT_ZERO_SHOT_REACT_DESCRIPTION, handle_parsing_errors=True, verbose=True)`. `llm-math` does calculation; Wikipedia looks up facts. That helper still accepts the agent argument and builds `create_tool_calling_agent`, because the classic ReAct agent sends `stop` sequences these models reject. Run it with `agent.invoke({"input": ...})`.
 
 **Q: What does `CHAT_ZERO_SHOT_REACT_DESCRIPTION` mean?**
-A: A **ReAct** agent (reason, then act) that uses the chat model and each tool's **description** to pick a tool, with no few-shot tool-use examples.
+A: The course name for a **ReAct** agent (reason, then act) that uses the chat model and each tool's **description** to pick a tool, with no few-shot tool-use examples. `06_agents.py` keeps the argument and does not build that agent. `create_tool_calling_agent` selects the tool through the tools API instead.
 
 **Q: What is a Python agent?**
-A: `create_python_agent(llm, tool=PythonREPLTool(), verbose=True)` gives the model a Python REPL so it can write and run code (e.g., process a list) instead of guessing the result.
+A: `create_python_agent(llm, tool=PythonREPLTool(), verbose=True)` gives the model a Python REPL so it can write and run code (e.g., process a list) instead of guessing the result. It uses the same `create_tool_calling_agent` path as `initialize_agent`.
 
 **Q: How do you add a custom tool?**
 A: Decorate a function with `@tool` and write a precise **docstring**. The agent uses that description to decide **when** to call it; the type hints describe the input. Register it by appending the function to the tools list.
@@ -260,7 +260,7 @@ A: The project moves quickly. The ideas (templates, parsers, memory, chains, ret
 | Term | Meaning |
 | --- | --- |
 | LangChain | Open-source framework to compose LLM apps from modular components |
-| `ChatOpenAI` | Chat-model wrapper; call with `.invoke(messages)`, not `chat(...)` |
+| `ChatOpenAI` | Chat-model wrapper from `langchain_openai`; `model="gpt-5-nano"`, `temperature=1`; call with `.invoke(messages)` |
 | Prompt template | Reusable prompt with `{variables}`; `ChatPromptTemplate.from_template` |
 | Prompt workflow | model → template → `format_messages` → `invoke` → `content` (then parse) |
 | Output parser | Turns model text into a typed object (`StructuredOutputParser`) |
@@ -279,13 +279,13 @@ A: The project moves quickly. The ideas (templates, parsers, memory, chains, ret
 | `SequentialChain` | Named inputs/outputs shared across steps |
 | Router / `MultiPromptChain` | LLM picks a destination chain or `DEFAULT` |
 | Embedding | Vector of meaning; similar text → similar vectors |
-| Vector store | Index of embeddings you can `similarity_search` |
+| Vector store | `InMemoryVectorStore`; search with `similarity_search` or `as_retriever` |
 | `RetrievalQA` | Retriever plus LLM; `chain_type` packs documents into prompts |
 | Stuff / map-reduce / refine / map-rerank | One prompt vs. per-chunk then combine vs. sequential update vs. best score |
 | `QAGenerateChain` | LLM writes question–answer eval examples from documents |
 | `QAEvalChain` | LLM grades a predicted answer against an expected one |
-| `langchain.debug` | Print every chain step's inputs and outputs |
-| Agent | LLM chooses tools in a loop (ReAct) until it can answer |
+| `set_debug` | `langchain_core.globals.set_debug(True)` prints every chain step |
+| Agent | `create_tool_calling_agent` loop; the helpers are still named `initialize_agent` and `create_python_agent` |
 | `@tool` | Registers a function; the docstring is what the agent reads |
 
 ---

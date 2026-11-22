@@ -46,7 +46,7 @@ A: The model already understands language, so you only teach the specific behavi
 A: No — they are complementary. A common production pattern retrieves current facts with RAG and uses finetuning to enforce response style and format.
 
 **Q: Should you finetune a base model or an instruction-tuned model?**
-A: A base model only predicts the next token; an instruction-tuned model has already learned to follow directions. Finetuning usually starts from an instruction-tuned model so it builds on that behavior.
+A: A base model only predicts the next token; an instruction-tuned model has already learned to follow directions. `01_finetuned_vs_non_finetuned.py` compares `meta-llama/Llama-2-7b-hf` with `meta-llama/Llama-2-7b-chat-hf` through `BasicModelRunner`. The local training run starts from the base `EleutherAI/pythia-70m`.
 
 ---
 
@@ -58,16 +58,16 @@ A: A base model only predicts the next token; an instruction-tuned model has alr
 A: Training on pairs of an instruction and a desired response so the model learns to follow that kind of request. It is a form of supervised finetuning (SFT).
 
 **Q: What does an instruction example contain?**
-A: An `instruction`, an optional `input` that provides context, and the `output` the model should produce. The input can be empty when the instruction is self-contained.
+A: `lamini_docs.jsonl` stores a `question` and an `answer`. The scripts also recognize `instruction`/`response` and `input`/`output` when those column names appear.
 
 **Q: Why use a prompt template?**
-A: The template fixes how instruction, input, and output are framed. Using the same template at training and inference keeps the model's expected format consistent.
+A: The template fixes how the question and answer are framed. `prompt_template_q` ends at `### Answer:` so the model learns to generate the answer. `prompt_template_qa` includes `{answer}` in one `text` string. Use the same template at inference.
 
-**Q: What is an Alpaca-style template?**
-A: A common format with sections such as `### Instruction:`, `### Input:`, and `### Response:` that wraps each example. The model learns to emit the answer after the response marker.
+**Q: What template do the scripts use?**
+A: `### Question:` and `### Answer:`, not an Alpaca `### Instruction:` / `### Response:` wrapper. The chat comparison uses Llama 2's `[INST] ... [/INST]` around the same prompt.
 
 **Q: What is full finetuning?**
-A: Updating all of the model's weights. It is the most flexible option but needs the most memory and compute and produces a full model copy.
+A: Updating all of the model's weights. The local script does this: `AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-70m")` and a Hugging Face `Trainer` for `max_steps=3`. It saves a full checkpoint under `lamini_docs_3_steps/final`, not a LoRA adapter.
 
 **Q: What is parameter-efficient finetuning (PEFT)?**
 A: Freezing most of the base model and training a small set of added parameters. It cuts memory and storage and lets many task adapters share one base model.
@@ -94,13 +94,13 @@ A: Often hundreds to a few thousand high-quality examples for a narrow task. Qua
 A: It is accurate, relevant to the target task, consistent in format, and representative of real inputs. Remove duplicates, contradictions, and low-effort responses.
 
 **Q: How should the data be split?**
-A: Into training, validation, and test sets. Train on one portion, tune and detect overfitting on validation, and report final results on the untouched test set.
+A: `train_test_split(test_size=0.1, shuffle=True, seed=123)` holds out 10% after tokenization. Train on the rest. The published Hub set `lamini/lamini_docs` already has `train` and `test` splits. Report final results on data that was not used to fit the weights.
 
 **Q: Why must the format match at inference?**
 A: The model learns the exact prompt structure it saw during training. A different template at inference shifts the input distribution and degrades output.
 
 **Q: What happens during tokenization?**
-A: Text is split into tokens and truncated or padded to a fixed maximum length. Long examples are cut, so important content must fit within the context limit.
+A: `AutoTokenizer.from_pretrained("EleutherAI/pythia-70m")` turns text into `input_ids`. The script sets `pad_token` to `eos_token`, `truncation_side = "left"`, and `max_length` 2048. Long examples are cut, so important content must fit.
 
 **Q: What is a common data pitfall?**
 A: **Leakage** — validation or test examples appearing in training. It inflates scores and hides real generalization problems.
@@ -112,22 +112,22 @@ A: **Leakage** — validation or test examples appearing in training. It inflate
 ### Training the model
 
 **Q: What are the steps to train?**
-A: (1) Load the pretrained model and tokenizer, (2) format and tokenize the data, (3) set training arguments, (4) run training while monitoring loss, and (5) save the model or adapters.
+A: (1) `AutoTokenizer.from_pretrained` and `AutoModelForCausalLM.from_pretrained` on `EleutherAI/pythia-70m`, with `tokenizer.pad_token = tokenizer.eos_token`. (2) `tokenize_and_split_data` on `lamini_docs.jsonl`. (3) `TrainingArguments`. (4) `trainer.train()`. (5) `trainer.save_model`. Hosted calls use `BasicModelRunner` when Lamini credentials are set.
 
 **Q: What loss does instruction finetuning use?**
 A: Causal language modeling loss — the negative log-likelihood of each next token given the preceding tokens. The model learns to predict the response token by token.
 
 **Q: Should loss be computed on the instruction tokens?**
-A: No — the useful signal is the response. Masking the instruction tokens so only response tokens contribute stops the model from being trained to reproduce prompts.
+A: The useful signal is the response, so many recipes mask the prompt tokens. These scripts do not: `add_column("labels", tokenized_dataset["input_ids"])` copies every token, and the causal model shifts them internally.
 
 **Q: What are the key training hyperparameters?**
-A: Learning rate, number of epochs, batch size, and sequence length, plus warmup and weight decay. Start conservative and change one at a time.
+A: `TrainingArguments` in the script sets `learning_rate=1.0e-5`, `num_train_epochs=1`, `max_steps=3`, `per_device_train_batch_size=1`, `warmup_steps=1`, `optim="adafactor"`, `gradient_accumulation_steps=4`, and `max_length=2048`. `max_steps` overrides the epoch count.
 
 **Q: What learning rate is appropriate?**
-A: A small learning rate relative to pretraining, so the model adapts without forgetting. Too high destabilizes training; too low barely changes behavior.
+A: The script uses `1.0e-5`, small relative to pretraining, so the model adapts without forgetting. Too high destabilizes training; too low barely changes behavior.
 
 **Q: How many epochs should you train?**
-A: Start with a small number, often one to three. More epochs raise the risk of overfitting, especially with a small dataset.
+A: The script sets `num_train_epochs=1` and stops after `max_steps=3` so the lesson stays short. More epochs raise the risk of overfitting on a small dataset.
 
 **Q: What is overfitting and how do you spot it?**
 A: The model memorizes training examples instead of generalizing. Training loss keeps falling while validation loss flattens or rises.
@@ -136,10 +136,10 @@ A: The model memorizes training examples instead of generalizing. Training loss 
 A: Training and validation loss curves, plus sample generations. Falling training loss with worsening samples signals a problem even when the number looks good.
 
 **Q: What is a checkpoint?**
-A: A saved snapshot of the model or adapters at a training step. Checkpoints let you compare versions, resume training, and roll back a bad run.
+A: A saved snapshot of the weights. `trainer.save_model` writes `lamini_docs_3_steps/final`. `save_steps=120` and `save_total_limit=1` control intermediate saves. The longer comparison model is `lamini/lamini_docs_finetuned` on the Hub.
 
 **Q: What does LoRA change during training?**
-A: Only the adapter matrices receive gradients; the base weights stay frozen. The saved artifact is the small adapter, not a full model copy.
+A: Only the adapter matrices receive gradients; the base weights stay frozen. The saved artifact is the small adapter, not a full model copy. The scripts in this folder do not use LoRA; their `Trainer` updates every weight of `pythia-70m`.
 
 ---
 
@@ -151,10 +151,10 @@ A: Only the adapter matrices receive gradients; the base weights stay frozen. Th
 A: Lower training loss does not prove better behavior on real inputs. Evaluation shows whether the model actually improved and whether it regressed elsewhere.
 
 **Q: How should a finetuned model be evaluated?**
-A: On a held-out test set, against a clear baseline such as the base model or a prompted model. Use task metrics plus human review of real examples.
+A: `05_evaluation.py` loads `lamini/lamini_docs_finetuned` with `AutoModelForCausalLM` and scores `model.generate` against the held-out answers. Compare that with the base `EleutherAI/pythia-70m` and with a prompted baseline.
 
 **Q: What metrics are used?**
-A: Task-specific scores (e.g., accuracy, exact match, or overlap metrics), validation loss, and human ratings. For open-ended outputs, human or model-assisted judging matters more than a single number.
+A: `is_exact_match` is true only when `generated_answer.strip()` equals `target_answer.strip()`. The same file can run the lm-evaluation-harness ARC Easy benchmark. Human review still catches failures a string match misses.
 
 **Q: Why is human evaluation important?**
 A: It catches tone, usefulness, and failure modes that automatic metrics miss. A model can score well and still be unhelpful or unsafe in practice.
@@ -210,9 +210,13 @@ A: Finetuning before trying prompting or RAG, or training on too little or too n
 | Pretraining | Training a model from scratch on massive general data |
 | Instruction finetuning | Training on instruction → response pairs |
 | SFT | Supervised finetuning on labeled input/output examples |
-| Instruction / input / output | The three fields of a training example |
-| Prompt template | Fixed wrapper applied to every training example |
-| Alpaca-style | Template using `### Instruction:`, `### Input:`, `### Response:` |
+| `question` / `answer` | Fields in `lamini_docs.jsonl` |
+| Prompt template | `### Question:` and `### Answer:` (`prompt_template_q` or `prompt_template_qa`) |
+| `[INST] ... [/INST]` | Llama 2 chat wrapper used with `BasicModelRunner` |
+| `EleutherAI/pythia-70m` | Small base model the local `Trainer` fine-tunes |
+| `AutoModelForCausalLM` | Hugging Face class that loads the causal model |
+| `TrainingArguments` | Learning rate, `max_steps`, batch size, and checkpoint settings |
+| Exact match | `is_exact_match`: stripped strings must be identical |
 | Full finetuning | Updating all model weights |
 | PEFT | Training only a small set of added parameters |
 | LoRA | Low-rank adapters added to frozen weights |

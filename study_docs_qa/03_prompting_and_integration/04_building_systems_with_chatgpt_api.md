@@ -44,7 +44,7 @@ A: Create `client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))` after loading `
 A: **`system`** sets standing behavior (persona, language, length). **`user`** is the human turn. **`assistant`** is a prior model turn you feed back, or extra context you inject as if the assistant already knew it.
 
 **Q: Which generation parameters does the course use?**
-A: **`temperature`** is sampling randomness (`0` is deterministic — use it for classification, extraction, and eval). **`max_completion_tokens`** caps the completion (the course called this `max_tokens`; that name is deprecated and does not work on reasoning models). For a one-letter `Y`/`N` gate, set `max_completion_tokens=1`. `gpt-5-nano` only allows the default temperature (`1`).
+A: **`temperature`** is sampling randomness. The course used `0` for classification, extraction, and eval. These scripts pass `temperature=1` and `max_completion_tokens=5000`, because `gpt-5-nano` only allows the default temperature and a cap of `1` is spent on reasoning tokens before the visible reply. **`max_completion_tokens`** caps the completion (the course called this `max_tokens`).
 
 ---
 
@@ -56,7 +56,7 @@ A: **`temperature`** is sampling randomness (`0` is deterministic — use it for
 A: Different intents need different pipelines (billing vs. product vs. account). A cheap first call returns a label so later prompts, tools, or humans only run for that path.
 
 **Q: How do you classify with an LLM?**
-A: Put the taxonomy in the system message (primary and secondary categories), wrap the query in a **delimiter** such as `####` so it is treated as data, and require **JSON** keys the program can load. Use `temperature=0` so the schema stays stable.
+A: Put the taxonomy in the system message (primary and secondary categories), wrap the query in a **delimiter** such as `####` so it is treated as data, and require **JSON** keys the program can load. The script calls `gpt-5-nano` with `temperature=1`.
 
 ---
 
@@ -76,7 +76,7 @@ A: When the app needs a stricter bar. Use `category_scores` and set your own thr
 A: User text that tries to override the system (“ignore previous instructions and…”). The model may then do a task it was not built for.
 
 **Q: How do you reduce prompt injection?**
-A: (1) Wrap user text in delimiters. (2) Strip those delimiter characters from the user string first. (3) Restate the standing rule next to the wrapped input. (4) Run a separate few-shot detector that answers only `Y` or `N` (`max_completion_tokens=1`) before the main call.
+A: (1) Wrap user text in delimiters. (2) Strip those delimiter characters from the user string first. (3) Restate the standing rule next to the wrapped input. (4) Run a separate few-shot detector that answers only `Y` or `N` before the main call. The scripts ask for that single character and still pass `max_completion_tokens=5000`, so reasoning tokens are not cut off.
 
 ---
 
@@ -194,7 +194,7 @@ A: Split the job into evaluate-input, process, and check-output stages; keep fac
 | `tiktoken` | Python library to count tokens locally |
 | Chat format | List of `{role, content}` messages sent to `client.chat.completions.create` |
 | `system` / `user` / `assistant` | Standing rules, human turn, prior or injected model turn |
-| `temperature` | Sampling randomness; `0` for deterministic pipelines |
+| `temperature` | Sampling randomness; these scripts pass `1` on `gpt-5-nano` |
 | Classification | First-pass label so later steps can route |
 | Delimiter | Marker (e.g., `####`) that treats user text as data |
 | Moderation API | Policy scores and `flagged` for input or output text |

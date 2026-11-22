@@ -7,7 +7,7 @@
 ### Reasoning models
 
 **Q: What is reasoning model?**
-A: OpenAI's **reasoning model**: it thinks before it replies. Unlike GPT-4o, which writes the answer immediately, reasoning model spends inference time generating a hidden **chain of thought (CoT)**, then returns a more careful response. It is strong at abstract reasoning — planning, coding, analysis, law, and other STEM work.
+A: The scripts call this model `gpt-5-nano` (`REASONING_MODEL`). It thinks before it replies: inference time is spent on a hidden **chain of thought (CoT)**, then it returns a more careful response. It is strong at abstract reasoning — planning, coding, analysis, law, and other STEM work. The cheaper model in the same scripts is `gpt-6-luna` (`NON_REASONING_MODEL`) with `reasoning_effort="none"`.
 
 **Q: What is test-time compute?**
 A: Extra work at **inference**, not training. reasoning model spends that budget on hidden **reasoning tokens** that try strategies, catch errors, and break the problem down. More thinking time usually raises accuracy on tasks that benefit from a slow pass, and the loop gives extra chances to catch hallucinations.
@@ -33,7 +33,7 @@ A: For some problems, **checking** a candidate is much easier than producing one
 A: When verification is no easier than generation, e.g., looking up a fact or recognizing an image. Thinking longer will not recover a missing capital city.
 
 **Q: When should you use reasoning model instead of a smaller, faster model?**
-A: Use reasoning model when the task has a generator-verifier gap or needs a test-and-learn loop (planning, coding, domain reasoning); use GPT-4o or `gpt-4o-mini` for cheap, low-latency steps. **reasoning model-mini** is the faster, cheaper sibling for coding, math, and science, with less world knowledge — intelligence trades off against latency and cost.
+A: Use `gpt-5-nano` when the task has a generator-verifier gap or needs a test-and-learn loop (planning, coding, domain reasoning). Use `gpt-6-luna` with `reasoning_effort="none"` for cheap, low-latency steps. The scripts have no separate mini model id.
 
 ---
 
@@ -66,16 +66,16 @@ A: Give **one or two** worked examples instead of a long rule list. **Few-shot**
 A: Given a hard goal, a tool catalog, and constraints, it writes a detailed policy: which tools to call, in what order, and which branches to take. That planning step is where the extra intelligence is worth the cost.
 
 **Q: How do you combine reasoning model with a cheaper model?**
-A: **Orchestrator pattern:** (1) reasoning model or reasoning model-mini writes the plan once, (2) `gpt-4o-mini` executes the plan with tools in a loop. Using reasoning model for every tool call is slow and expensive; planning once and executing cheaply balances accuracy and cost.
+A: **Orchestrator pattern:** (1) `gpt-5-nano` writes the plan once, (2) `gpt-6-luna` executes the plan with tools in a loop. Using the reasoning model for every tool call is slow and expensive; planning once and executing cheaply balances accuracy and cost.
 
 **Q: What do you put in the planner prompt?**
 A: Role, goal, the executor it will hand off to, each available function (name, arguments, when to use it), and bounds (e.g., notify the user before finishing, ship what you can now, back-order the rest). Ask for the next steps of the plan, not a chatty essay.
 
 **Q: How should the executor be prompted?**
-A: The cheaper model still needs explicit CoT. Tell it to follow the plan **exactly**, then (1) read the policy, (2) identify the current step, (3) briefly explain the action, (4) call the matching tool. Loop on `chat.completions.create` with `tools` until a terminal call such as `instructions_complete`. Set `parallel_tool_calls=False` if steps must stay ordered.
+A: `gpt-6-luna` still needs explicit CoT. Tell it to follow the plan **exactly**, then (1) read the policy, (2) identify the current step, (3) briefly explain the action, (4) call the matching tool. `create_chat_completion` sets `reasoning_effort="none"` for that model and loops `client.chat.completions.create` with `tools=TOOLS` until a terminal call such as `instructions_complete`. Set `parallel_tool_calls=False` if steps must stay ordered.
 
 **Q: Should reasoning model call the tools itself?**
-A: It can, but that is usually overkill. Reserve reasoning model for the plan; let `gpt-4o-mini` (or GPT-4o) do the function calls.
+A: It can, but that is usually overkill. Reserve `gpt-5-nano` for the plan; let `gpt-6-luna` make the tool calls.
 
 ---
 
@@ -84,7 +84,7 @@ A: It can, but that is usually overkill. Reserve reasoning model for the plan; l
 ### Generate, edit, and compare
 
 **Q: How does reasoning model compare with GPT-4o on coding?**
-A: reasoning model and reasoning model-mini outperform GPT-4o on coding that needs structure, validation, and edge cases. Use that gap when the spec is non-trivial, not for a one-line snippet.
+A: `get_chat_completion(REASONING_MODEL, prompt)` is the script path (`gpt-5-nano`). Use it when the spec needs structure, validation, and edge cases, not for a one-line snippet. The course compared this class of model with GPT-4o on that kind of coding.
 
 **Q: How do you prompt reasoning model to write new code?**
 A: State the behavior, constraints, and export names; ask for **code only** if you need a drop-in file. A capable reasoning model will invent structure and validation instead of a thin scaffold.
@@ -102,7 +102,7 @@ A: Yes. Ask which option is better and why. That **LLM-as-judge** pass is useful
 ### Hierarchy of reasoning
 
 **Q: How do you send an image to reasoning model?**
-A: Encode the file as **base64** and pass a multimodal user message: text plus `image_url` with `data:image/png;base64,...`. Optionally set `response_format` to `json_object` when you need a parseable extract.
+A: `reasoning_model_vision` encodes the file as **base64** and passes a multimodal user message to `REASONING_MODEL`: text plus `image_url` with `data:image/png;base64,...`. Set `response_format={"type": "json_object"}` when you need a parseable extract.
 
 **Q: Why is reasoning model stronger than GPT-4o at image reasoning?**
 A: Vision plus test-and-learn: it can try a reading, check it against the picture, and drop hallucinated boxes or edges. GPT-4o often misreads dense diagrams (org charts, ER diagrams) that reasoning model gets right.
@@ -131,13 +131,13 @@ A: A **data-quality** pass: the model must not invent tools. If it did, implemen
 ### Eval loop
 
 **Q: How do you evaluate a customer-support routine?**
-A: Run each case with a policy-following **agent** (`temperature=0`, tools on) and a simulated **customer** that answers from case details. Score the terminal tool name and arguments against `expected_function` and `expected_inputs`. Accuracy is the fraction of matching rows.
+A: Run each case with a policy-following **agent** on `NON_REASONING_MODEL` (`tools=TOOLS`, `parallel_tool_calls=False`; the helper does not pass `temperature`) and a simulated **customer** that answers from case details. Score the terminal tool name and arguments against `expected_function` and `expected_inputs`. Accuracy is the fraction of matching rows.
 
 **Q: How does the meta-prompting loop improve the routine?**
 A: (1) Send reasoning model the original policy, tool list, current routine, and eval table (request, expected vs. actual call, transcript, `is_correct`). (2) Ask it to fix failure modes without violating the source policy. (3) Re-run the eval. Repeat for a fixed number of iterations and plot accuracy.
 
 **Q: How do you get a parseable revised policy from reasoning model?**
-A: At the time of the course, reasoning model did not support structured outputs. Chain a GPT-4o call with a JSON schema such as `{ "final_answer": string }` and take that field.
+A: `get_openai_response(messages, REASONING_MODEL, response_format=OUTPUT_SCHEMA)` sends `response_format={"type": "json_schema", "json_schema": OUTPUT_SCHEMA}`. `OUTPUT_SCHEMA` is named `policy_output` and requires `final_answer`. Read `json.loads(content)["final_answer"]`.
 
 **Q: What edits tend to raise eval score?**
 A: Few-shot examples of two often-confused tools, named attributes the agent mislabels, tighter step wording, or a format change (Markdown vs. `<step>` / `<if>` XML). Keep every change compliant with the original policy and the allowed tools.
@@ -155,7 +155,7 @@ A: Cap messages (e.g., `MAX_TOKENS = 120000`). Drop transcripts from older table
 A: Prompt reasoning model simply, spend it where thinking pays (plans, hard code, visual indexes, prompt rewrites), and delegate execution to faster models. Measure with evals; let reasoning model climb those evals.
 
 **Q: When is reasoning model the wrong default?**
-A: High-volume, low-reasoning steps, tight latency budgets, and lookups with no verifier. Those belong on GPT-4o or `gpt-4o-mini`.
+A: High-volume, low-reasoning steps, tight latency budgets, and lookups with no verifier. Those belong on `gpt-6-luna` with `reasoning_effort="none"`.
 
 ---
 
@@ -175,7 +175,7 @@ A: High-volume, low-reasoning steps, tight latency budgets, and lookups with no 
 | No explicit CoT | Do not add "think step by step"; it can hurt reasoning model |
 | Structure | Markdown, quotes, or XML tags that separate roles and data |
 | Show rather than tell | One or two examples instead of a long rule list |
-| Orchestrator | reasoning model plans; a cheaper model executes with tools |
+| Orchestrator | `gpt-5-nano` plans; `gpt-6-luna` executes with `tools` |
 | Hierarchy of reasoning | Index the image once; answer later from that structure |
 | Meta-prompting | reasoning model rewrites a cheaper model's prompt using eval failures |
 | Routine | Policy rewritten as numbered, tool-calling steps for an LLM |

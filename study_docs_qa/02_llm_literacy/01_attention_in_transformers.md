@@ -92,7 +92,7 @@ A: Zeroing a score before softmax still leaves it with probability after normali
 A: Lower-triangular: token 1 attends only to itself; token 2 to the first two; token 3 to all three, and so on.
 
 **Q: How is the mask built in PyTorch?**
-A: `mask = (torch.tril(torch.ones(n, n)) == 0)` gives a boolean upper-triangular mask; apply `scaled.masked_fill(mask, float('-inf'))` before softmax.
+A: `mask = torch.tril(torch.ones(3, 3)); mask = mask == 0` marks the upper triangle `True`. `scaled_sims.masked_fill(mask=mask, value=-1e9)` runs before softmax. `True` means hide that score. The scripts use `-1e9` rather than `-inf`.
 
 **Q: What is an encoder-only transformer?**
 A: It uses only self-attention and produces context-aware embeddings for clustering, search, and classification. BERT is the main example.
@@ -132,17 +132,17 @@ A: Multiple attention heads run in parallel, each with its own `W_q`, `W_k`, `W_
 A: One attention pattern cannot capture all relationships. Heads can specialize (syntax, coreference, nearby context), giving a richer representation.
 
 **Q: How does multi-head attention return to the original width?**
-A: Concatenating heads produces a wider vector; a linear layer projects it back to `d_model`. Alternatively, each head can output fewer values so the concat already matches.
+A: A full Transformer concatenates the heads and projects them back to `d_model` with `W_o`. `MultiHeadAttention` in this folder only concatenates, so `d_model=2` and `num_heads=2` returns 4 columns.
 
 **Q: How is multi-head attention coded?**
-A: One attention module per head; loop in `forward`, collect outputs, `torch.cat`, then an output `nn.Linear`.
+A: `MultiHeadAttention` stores one `Attention` head per entry in an `nn.ModuleList`. `forward(encodings_for_q, encodings_for_k, encodings_for_v)` concatenates the head outputs with `torch.cat(..., dim=col_dim)`. This demo does not add an output `nn.Linear`.
 
 ---
 
 ## Part 5 — PyTorch Implementation
 
 **Q: How is a self-attention module structured in PyTorch?**
-A: Subclass `nn.Module`; `__init__` creates `W_q`, `W_k`, `W_v` as `nn.Linear`; `forward` computes Q, K, and V and applies the equation.
+A: `SelfAttention(nn.Module)` takes `d_model=2`, `row_dim=0`, and `col_dim=1`. `__init__` creates `W_q`, `W_k`, and `W_v` as `nn.Linear(..., bias=False)`. `forward(token_encodings)` computes Q, K, and V and applies the equation.
 
 **Q: What is `d_model`?**
 A: Number of embedding values per token; sets weight-matrix size (d_model=2 → 2×2 matrices; 512+ typical). Only constraint: matrix math must be dimensionally valid.
@@ -151,24 +151,26 @@ A: Number of embedding values per token; sets weight-matrix size (d_model=2 → 
 A: The original Transformer adds no bias terms when computing attention.
 
 **Q: What does the attention `forward` method compute?**
-A: `q = W_q(x)`, `k = W_k(x)`, `v = W_v(x)`; `similarities = q @ k.transpose(-2,-1)`; divide by `sqrt(d_k)`; softmax; return `attention_percents @ v`.
+A: `q = W_q(token_encodings)`, and the same for `k` and `v`. `sims = torch.matmul(q, k.transpose(dim0=row_dim, dim1=col_dim))`. Divide by `k.size(col_dim)**0.5`, then `F.softmax(..., dim=col_dim)`, then `torch.matmul(attention_percents, v)`.
 
 ```python
-import math, torch, torch.nn as nn, torch.nn.functional as F
-
 class SelfAttention(nn.Module):
-    def __init__(self, d_model):
+    def __init__(self, d_model=2, row_dim=0, col_dim=1):
         super().__init__()
-        self.W_q = nn.Linear(d_model, d_model, bias=False)
-        self.W_k = nn.Linear(d_model, d_model, bias=False)
-        self.W_v = nn.Linear(d_model, d_model, bias=False)
+        self.W_q = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
+        self.W_k = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
+        self.W_v = nn.Linear(in_features=d_model, out_features=d_model, bias=False)
+        self.row_dim = row_dim
+        self.col_dim = col_dim
 
-    def forward(self, x):
-        q, k, v = self.W_q(x), self.W_k(x), self.W_v(x)
-        sim = q @ k.transpose(-2, -1)
-        scaled = sim / math.sqrt(k.shape[-1])
-        weights = F.softmax(scaled, dim=-1)
-        return weights @ v
+    def forward(self, token_encodings):
+        q = self.W_q(token_encodings)
+        k = self.W_k(token_encodings)
+        v = self.W_v(token_encodings)
+        sims = torch.matmul(q, k.transpose(dim0=self.row_dim, dim1=self.col_dim))
+        scaled_sims = sims / torch.tensor(k.size(self.col_dim)**0.5)
+        attention_percents = F.softmax(scaled_sims, dim=self.col_dim)
+        return torch.matmul(attention_percents, v)
 ```
 
 **Q: Why do PyTorch `nn.Linear` weights look transposed vs. the math?**
@@ -178,34 +180,33 @@ A: PyTorch stores `nn.Linear` weights transposed relative to math notation; tran
 A: Print the weight matrices, compute Q, K, and V manually (or call `W_q(x)`), and compare with the class output.
 
 **Q: Why set a manual seed?**
-A: Weights are randomly initialized; `torch.manual_seed(...)` makes results reproducible.
+A: Weights are randomly initialized. The scripts call `torch.manual_seed(42)` so the printed matrices match across files.
 
 **Q: Does this attention class train the weights?**
 A: No — it implements only the attention math, not a full transformer. The tensors are set up so backpropagation could train them later.
 
 **Q: What changes for masked self-attention?**
-A: Same Q/K/V; `forward` also takes a mask and calls `scaled.masked_fill(mask, float('-inf'))` before softmax.
+A: `MaskedSelfAttention.forward(token_encodings, mask=None)` uses the same Q/K/V path. When `mask` is set, `scaled_sims.masked_fill(mask=mask, value=-1e9)` runs before softmax.
 
 ```python
 class MaskedSelfAttention(nn.Module):
-    def __init__(self, d_model):
-        super().__init__()
-        self.W_q = nn.Linear(d_model, d_model, bias=False)
-        self.W_k = nn.Linear(d_model, d_model, bias=False)
-        self.W_v = nn.Linear(d_model, d_model, bias=False)
-
-    def forward(self, x, mask):
-        q, k, v = self.W_q(x), self.W_k(x), self.W_v(x)
-        scaled = (q @ k.transpose(-2, -1)) / math.sqrt(k.shape[-1])
-        scaled = scaled.masked_fill(mask, float('-inf'))
-        return F.softmax(scaled, dim=-1) @ v
+    def forward(self, token_encodings, mask=None):
+        q = self.W_q(token_encodings)
+        k = self.W_k(token_encodings)
+        v = self.W_v(token_encodings)
+        sims = torch.matmul(q, k.transpose(dim0=self.row_dim, dim1=self.col_dim))
+        scaled_sims = sims / torch.tensor(k.size(self.col_dim)**0.5)
+        if mask is not None:
+            scaled_sims = scaled_sims.masked_fill(mask=mask, value=-1e9)
+        attention_percents = F.softmax(scaled_sims, dim=self.col_dim)
+        return torch.matmul(attention_percents, v)
 ```
 
 **Q: Can one class implement all three attention types?**
-A: Yes, with a mode switch, or use separate classes. The only differences: whether a mask is applied, and whether Q vs. K/V come from the same input (self) or different inputs (cross).
+A: The scripts use three classes. `SelfAttention.forward` takes `token_encodings`. `MaskedSelfAttention.forward` adds an optional `mask`. `Attention.forward` takes `encodings_for_q`, `encodings_for_k`, and `encodings_for_v`, plus an optional `mask`.
 
 **Q: What happens with more heads?**
-A: More attention values per token; the final linear projection restores the desired dimension.
+A: `torch.cat` along `col_dim` adds `d_model` columns per head. `num_heads=1` stays width 2; `num_heads=2` returns width 4. The scripts reset `torch.manual_seed(42)` before the second run.
 
 **Q: Why learn attention with a tiny embedding size?**
 A: So the matrix math can be checked by hand. The same code generalizes to typical sizes such as 512.
@@ -236,8 +237,8 @@ A: So the matrix math can be checked by hand. The same code generalizes to typic
 | Multi-head | Parallel heads, concatenated and projected |
 | `nn.Linear` | Holds weights and performs the matrix math |
 | `bias=False` | No bias, as in the original paper |
-| `torch.tril` / `masked_fill` | Build mask / set masked scores to -∞ |
-| `torch.matmul` / `@` | Matrix multiplication |
+| `torch.tril` / `masked_fill` | Build the causal mask / set masked scores to `-1e9` |
+| `torch.matmul` | Matrix multiply used by the scripts; `k.transpose(dim0=row_dim, dim1=col_dim)` |
 
 ---
 

@@ -244,7 +244,7 @@ Whiteboard "what happens between sending a prompt and receiving a token," includ
 **3.2 LLM integration**
 - [x] ✅ `Building Systems with the ChatGPT API` (OpenAI) — ~1h — chat completions, structured outputs, moderation.
 - [x] ✅ `LangChain for LLM Application Development` (LangChain) — ~1h30m — chains, memory, agents.
-- [ ] ✅ `Functions, Tools and Agents with LangChain` (LangChain) — ~1h — tool/function calling.
+- [x] ✅ `Functions, Tools and Agents with LangChain` (LangChain) — ~1h — tool/function calling.
 - [ ] ✅ `LangChain: Chat with Your Data` (LangChain) — ~1h — RAG with LangChain (preview of Stage 4).
 - [ ] ✅ `Serverless LLM Apps with Amazon Bedrock` (AWS) — ~1h — cloud provider auth, multi-model, cost/latency.
 

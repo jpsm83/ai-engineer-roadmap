@@ -187,7 +187,7 @@ A: No: each API call is stateless. To continue a chat you must resend the **cont
 A: Put the job, style, workflow, and any catalog or constraints in the system message. The bot then greets, collects what it needs, confirms, and stays in character without restating those rules every turn.
 
 **Q: How do you keep a multi-turn bot consistent?**
-A: Append every new user line and assistant reply to the message list and send the full list on the next call. Use a low temperature so it does not invent options outside the rules.
+A: Append every new user line and assistant reply to the message list and send the full list on the next call. The scripts leave temperature at the default `1`, which is the only value `gpt-5-nano` accepts.
 
 **Q: How do you get a structured result from a chat?**
 A: After (or during) the conversation, send another completion that asks for a JSON (or other schema) summary of the collected fields. That object is what your backend should store or execute.
@@ -225,7 +225,7 @@ A: Summaries, inferences, transformations, expansions, and chatbots — often in
 | Zero-shot | Classify from instructions only, no extra training |
 | Transforming | Convert language, tone, format, or correctness |
 | Expanding | Grow a short input into a longer text |
-| Temperature | Sampling randomness; `0` = deterministic, higher = more varied |
+| Temperature | Sampling randomness; these scripts leave it at `1`, the only value `gpt-5-nano` accepts |
 | System / user / assistant | Chat roles: standing rules, human turn, prior model turn |
 | Context | Message history you must resend; the API is stateless |
 
