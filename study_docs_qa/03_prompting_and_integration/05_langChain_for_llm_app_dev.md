@@ -61,22 +61,72 @@ A: The completion is a string. Indexing it as `response.content["field"]` fails 
 **Q: Are LLM API calls stateful?**
 A: No. Each call sees only the messages you send. **Memory** stores prior turns and injects them into the next prompt so a chatbot can refer to earlier facts.
 
-**Q: How do you attach memory to a conversation?**
-A: Build a `ConversationChain(llm=..., memory=..., verbose=True)`. The chain prepends `memory.load_memory_variables({})` (usually a `history` string) to the new user input. `save_context({"input": ...}, {"output": ...})` writes a turn by hand.
+### Save and load pattern
 
-### Memory types
+**Q: What is the shared save-and-load pattern for LangChain memory?**
+A: Every memory type uses the same two methods. `save_context({"input": user_text}, {"output": model_text})` appends one Human/AI turn. `load_memory_variables({})` returns a dict (usually `{"history": "..."}`) that the next prompt can insert.
+
+**Q: What does `save_context` store internally?**
+A: It extracts the user string from `inputs["input"]` and the model string from `outputs["output"]`, then appends a `HumanMessage` and an `AIMessage` to `chat_memory`. Classes that prune or summarize do that extra work *after* this append.
+
+**Q: What is the difference between `memory.buffer` and `load_memory_variables({})`?**
+A: `buffer` is the current history as a string (or as messages if `return_messages=True`). `load_memory_variables({})` wraps that value in the dict the chain expects, keyed by `memory_key` (default `"history"`). They show the same content; the dict is what the prompt template consumes.
+
+**Q: How does `ConversationChain` use this pattern on each turn?**
+A: (1) `load_memory_variables({})` fills `{history}` in the default prompt. (2) The chain calls the model with `{history}` plus the new `{input}`. (3) It then `save_context`s that input and the model's reply. You do not call `save_context` yourself when the chain owns the memory.
+
+**Q: How do you write a turn by hand without calling the model?**
+A: Call `memory.save_context({"input": "Hi"}, {"output": "What's up"})` as many times as you need, then inspect with `print(memory.buffer)` or `memory.load_memory_variables({})`. This is how you seed or test memory without an API call.
+
+**Q: How do you attach memory to a conversation?**
+A: `conversation = ConversationChain(llm=llm, memory=memory, verbose=True)`. Swap the memory object to change how history is kept; the chain API stays the same. `verbose=True` prints the filled prompt (including current `history`) via LangChain's stdout callback — it does not print `predict()`'s return value.
+
+**Q: Where does stored history appear in the prompt?**
+A: In the default template: `Current conversation:\n{history}\nHuman: {input}\nAI:`. Empty memory leaves `{history}` blank; after `save_context` or a `predict` turn, `{history}` is the formatted `Human:` / `AI:` transcript (or a summary, depending on the memory class).
+
+### ConversationBufferMemory
 
 **Q: What does `ConversationBufferMemory` store?**
-A: The **full** transcript. `memory.buffer` is the raw text; `load_memory_variables({})` returns `{"history": "..."}`. It is simple and accurate, but it grows until it hits the model's **context window**.
+A: The **full** transcript, untrimmed. `memory = ConversationBufferMemory()`; after each save, `memory.buffer` grows by one `Human:` / `AI:` pair. It is simple and accurate, but it grows until it hits the model's **context window**.
+
+**Q: When should you use `ConversationBufferMemory`?**
+A: Short chats where every prior fact must stay available (names, earlier answers). Do not use it for long sessions: token cost and context overflow grow with every turn.
+
+**Q: How do you inspect a buffer memory?**
+A: `print(memory.buffer)` for the raw string, or `memory.load_memory_variables({})` for `{"history": "..."}`. Both include every saved turn in order.
+
+### ConversationBufferWindowMemory
 
 **Q: What does `ConversationBufferWindowMemory` keep?**
-A: Only the last `k` exchanges (`ConversationBufferWindowMemory(k=1)` keeps one). Older turns are dropped, so the model forgets facts that fell out of the window.
+A: Only the last **`k` exchanges** (one exchange = one Human plus one AI message). `ConversationBufferWindowMemory(k=1)` keeps a single turn; older turns are dropped from what `load_memory_variables` returns.
+
+**Q: When should you use `ConversationBufferWindowMemory`?**
+A: When only recent context matters (follow-up questions, the last instruction). A small `k` caps prompt size, but the model forgets facts that slid out of the window (e.g., a name said two turns ago if `k=1`).
+
+**Q: How does `k` map onto stored messages?**
+A: The window is `k * 2` messages (human and AI per turn). `k=1` after two saves keeps only the second pair; `load_memory_variables({})["history"]` no longer contains the first `Hi` / `What's up`.
+
+### ConversationTokenBufferMemory
 
 **Q: What does `ConversationTokenBufferMemory` keep?**
-A: A recent buffer limited by **token count**, not by number of turns: `ConversationTokenBufferMemory(llm=llm, max_token_limit=n)`. It needs the `llm` so it can count tokens with that model's tokenizer.
+A: Recent messages whose total **token count** stays at or under `max_token_limit`. Construct it as `ConversationTokenBufferMemory(llm=llm, max_token_limit=50)`. It needs `llm` so it can count tokens with that model's tokenizer (`tiktoken` for OpenAI chat models).
 
-**Q: What does `ConversationSummaryBufferMemory` keep?**
-A: A running **summary** of older turns plus recent raw text, flushed when `max_token_limit` is exceeded. An LLM writes the summary, so you pay extra calls to compress history instead of dropping it.
+**Q: When should you use `ConversationTokenBufferMemory`?**
+A: When the limit you care about is the **context window in tokens**, not the number of turns. Long turns get dropped sooner than short ones; unlike a window of `k`, two brief exchanges may fit where one long exchange does not.
+
+**Q: How does token pruning work?**
+A: `save_context` appends the new turn, then while `llm.get_num_tokens_from_messages(buffer)` exceeds `max_token_limit` it `pop(0)`s the oldest message. `load_memory_variables({})` then returns only what still fits.
+
+### ConversationSummaryMemory
+
+**Q: What does `ConversationSummaryMemory` store?**
+A: A running **summary string**, not the raw transcript. `ConversationSummaryMemory(llm=llm)` calls the LLM after every `save_context` to fold the latest Human/AI pair into `buffer`. `load_memory_variables({})` returns `{"history": "<summary>"}`.
+
+**Q: When should you use `ConversationSummaryMemory`?**
+A: Long conversations where you need the gist of everything said but cannot afford the full transcript. You pay an extra LLM call per turn, and fine detail (exact wording, a name said once) can be lost in the summary.
+
+**Q: How does `ConversationSummaryBufferMemory` differ from `ConversationSummaryMemory`?**
+A: **Summary buffer** keeps recent raw turns until `max_token_limit`, then summarizes only the pruned prefix into `moving_summary_buffer` and prepends that summary to the remaining messages. **Summary memory** summarizes every turn and never injects the raw transcript. Use `ConversationSummaryBufferMemory(llm=llm, max_token_limit=n)` when you need both a compressed past and the latest wording.
 
 **Q: What other memory backends does the course mention?**
 A: **Vector-store memory** retrieves the most relevant past spans by embedding similarity. **Entity memory** uses an LLM to track facts about named entities. You can also persist conversation state in a key-value store or SQL.
@@ -216,10 +266,14 @@ A: The project moves quickly. The ideas (templates, parsers, memory, chains, ret
 | Output parser | Turns model text into a typed object (`StructuredOutputParser`) |
 | `ResponseSchema` | Name plus description of one field to extract |
 | Memory | Stored turns injected into the next prompt; the API itself is stateless |
-| Buffer memory | Full transcript; can overflow the context window |
-| Window memory | Last `k` exchanges only |
-| Token buffer memory | Recent turns up to `max_token_limit` tokens |
-| Summary buffer memory | LLM-compressed older history plus recent raw turns |
+| `save_context` | Appends one `{"input"}` / `{"output"}` turn to `chat_memory` |
+| `load_memory_variables` | Returns `{"history": ...}` for the prompt template |
+| `memory.buffer` | Current history string (or messages if `return_messages=True`) |
+| `ConversationBufferMemory` | Full transcript; accurate, unbounded, can overflow the context window |
+| `ConversationBufferWindowMemory` | Last `k` exchanges only; older turns are dropped |
+| `ConversationTokenBufferMemory` | Recent messages until `max_token_limit` tokens; needs `llm` to count |
+| `ConversationSummaryMemory` | Running LLM summary of every turn; no raw transcript in the prompt |
+| `ConversationSummaryBufferMemory` | LLM summary of pruned turns plus recent raw messages |
 | `LLMChain` | Prompt plus model; the basic chain |
 | `SimpleSequentialChain` | One-in, one-out steps piped in order |
 | `SequentialChain` | Named inputs/outputs shared across steps |
