@@ -10,7 +10,7 @@
 A: For each token, compare its **query** against every token's **key**; softmax turns the similarities into weights that combine the **values**. Result: a context-aware embedding — the same word gets different numbers depending on its context.
 
 **Q: Why was attention a breakthrough?**
-A: RNNs compressed a whole sentence into one fixed vector and processed tokens sequentially. Attention connects every token to every other token directly, preserves per-token vectors, and parallelizes on GPUs.
+A: RNNs (recurrent neural network) compressed a whole sentence into one fixed vector and processed tokens sequentially. Attention connects every token to every other token directly, preserves per-token vectors, and parallelizes on GPUs.
 
 **Q: What is the Transformer?**
 A: The architecture from *"Attention Is All You Need"* (Vaswani et al., Google Brain, 2017). Three building blocks: **word embedding**, **positional encoding**, **attention**. Basis of modern LLMs.
@@ -18,8 +18,8 @@ A: The architecture from *"Attention Is All You Need"* (Vaswani et al., Google B
 **Q: Where did attention come from?**
 A: Mid-2010s machine translation needed alignment across differing word orders/lengths. Bengio's (Montreal) and Manning's (Stanford) groups independently built encoder-decoder attention: the encoder produced one vector per word; the decoder weighted the relevant input vectors at each output step. The 2017 paper generalized this.
 
-**Q: How do BERT and GPT relate?**
-A: BERT uses the **encoder** (basis of embedding models for RAG/recommenders). GPT uses the **decoder** (basis of ChatGPT and most modern LLMs). The original used 6 attention layers; Llama 3.2-405B uses 126 — same architecture.
+**Q: How do BERT (bidirectional encoder representations from transformers) and GPT (generative pre-trained transformer) relate?**
+A: BERT (bidirectional encoder representations from transformers) uses the **encoder** (basis of embedding models for RAG/recommenders). GPT (generative pre-trained transformer) uses the **decoder** (basis of ChatGPT (generative pre-trained transformer) and most modern LLMs). The original used 6 attention layers; Llama 3.2-405B uses 126 — same architecture.
 
 ### Embeddings and Position
 
@@ -40,7 +40,7 @@ A: The post-attention representation reflecting relationships with other tokens.
 ## Part 2 — Self-Attention
 
 **Q: What is self-attention?**
-A: Attention where Q, K, and V all come from the same sequence. It computes similarity between every token and all others — including later tokens — then builds new representations, so a pronoun can attach to the noun it refers to.
+A: Attention where Q, K, and V (query, key value) all come from the same sequence. It computes similarity between every token and all others — including later tokens — then builds new representations, so a pronoun can attach to the noun it refers to.
 
 **Q: What are Query, Key, and Value?**
 A: An analogy from search: the **query** is the search term, **keys** are the records compared against it, and the **value** is what you get back for a match.
@@ -80,13 +80,13 @@ A: Scaled dot-product similarities → softmax percentages → scale and combine
 A: Self-attention sees tokens before **and after** the current token. Masked self-attention ignores everything after it.
 
 **Q: How does the math change?**
-A: Only the mask matrix `M` is added: `softmax(QKᵀ/√d_k + M) · V`. Q, K, V are computed identically.
+A: Only the mask matrix `M` is added: `softmax(QKᵀ/√d_k + M) · V`. Q, K, V (query, key, value) are computed identically.
 
 **Q: What is in the mask?**
-A: `0` for allowed positions, `-∞` for hidden ones. Adding 0 changes nothing; `-∞` becomes 0% after softmax.
+A: `0` for allowed positions, `-∞` (negative infinity) for hidden ones. Adding 0 changes nothing; `-∞` (negative infinity) becomes 0% after softmax.
 
-**Q: Why `-∞` instead of zero?**
-A: Zeroing a score before softmax still leaves it with probability after normalization. `-∞` guarantees exactly 0%.
+**Q: Why `-∞` (negative infinity) instead of zero?**
+A: Zeroing a score before softmax still leaves it with probability after normalization. `-∞` (negative infinity) guarantees exactly 0%.
 
 **Q: What does a causal mask look like?**
 A: Lower-triangular: token 1 attends only to itself; token 2 to the first two; token 3 to all three, and so on.
@@ -95,10 +95,10 @@ A: Lower-triangular: token 1 attends only to itself; token 2 to the first two; t
 A: `mask = torch.tril(torch.ones(3, 3)); mask = mask == 0` marks the upper triangle `True`. `scaled_sims.masked_fill(mask=mask, value=-1e9)` runs before softmax. `True` means hide that score. The scripts use `-1e9` rather than `-inf`.
 
 **Q: What is an encoder-only transformer?**
-A: It uses only self-attention and produces context-aware embeddings for clustering, search, and classification. BERT is the main example.
+A: It uses only self-attention and produces context-aware embeddings for clustering, search, and classification. BERT (bidirectional encoder representations from transformers) is the main example.
 
 **Q: What is a decoder-only transformer?**
-A: It uses only masked self-attention, is trained to predict the next token, and generates new tokens one at a time. GPT-style models are the main examples.
+A: It uses only masked self-attention, is trained to predict the next token, and generates new tokens one at a time. GPT (generative pre-trained transformer)-style models are the main examples.
 
 **Q: Why can decoder-only models generate text?**
 A: Training shows a prefix and updates weights until a likely continuation is produced. Inference generates one token at a time, feeding each output back as context.
@@ -142,7 +142,7 @@ A: `MultiHeadAttention` stores one `Attention` head per entry in an `nn.ModuleLi
 ## Part 5 — PyTorch Implementation
 
 **Q: How is a self-attention module structured in PyTorch?**
-A: `SelfAttention(nn.Module)` takes `d_model=2`, `row_dim=0`, and `col_dim=1`. `__init__` creates `W_q`, `W_k`, and `W_v` as `nn.Linear(..., bias=False)`. `forward(token_encodings)` computes Q, K, and V and applies the equation.
+A: `SelfAttention(nn.Module)` takes `d_model=2`, `row_dim=0`, and `col_dim=1`. `__init__` creates `W_q`, `W_k`, and `W_v` as `nn.Linear(..., bias=False)`. `forward(token_encodings)` computes Q, K, and V (query, key value) and applies the equation.
 
 **Q: What is `d_model`?**
 A: Number of embedding values per token; sets weight-matrix size (d_model=2 → 2×2 matrices; 512+ typical). Only constraint: matrix math must be dimensionally valid.
@@ -177,7 +177,7 @@ class SelfAttention(nn.Module):
 A: PyTorch stores `nn.Linear` weights transposed relative to math notation; transpose `W_q.weight` to verify by hand.
 
 **Q: How do you verify an attention implementation?**
-A: Print the weight matrices, compute Q, K, and V manually (or call `W_q(x)`), and compare with the class output.
+A: Print the weight matrices, compute Q, K, and V (query, key value) manually (or call `W_q(x)`), and compare with the class output.
 
 **Q: Why set a manual seed?**
 A: Weights are randomly initialized. The scripts call `torch.manual_seed(42)` so the printed matrices match across files.
@@ -222,7 +222,7 @@ A: So the matrix math can be checked by hand. The same code generalizes to typic
 | Word embedding | Learned numeric vector for a token |
 | Positional encoding | Adds token-order information |
 | Attention | Weighted combination of values via query-key similarity |
-| Self-attention | Q, K, V from the same sequence |
+| Self-attention | Q, K, V (query, key, value) from the same sequence |
 | Masked self-attention | Cannot see future tokens |
 | Cross-attention | Q from decoder; K/V from encoder |
 | Query / Key / Value | Search vector / compared vectors / returned vectors |
@@ -231,8 +231,8 @@ A: So the matrix math can be checked by hand. The same code generalizes to typic
 | Softmax | Scores → positive weights summing to 1 |
 | Mask (M) | 0 = allowed, -∞ = hidden |
 | Context-aware embedding | Representation reflecting surrounding context |
-| Encoder-only | Self-attention; embeddings (BERT) |
-| Decoder-only | Masked self-attention; generation (GPT) |
+| Encoder-only | Self-attention; embeddings (BERT (bidirectional encoder representations from transformers)) |
+| Decoder-only | Masked self-attention; generation (GPT (generative pre-trained transformer)) |
 | Encoder-decoder | Self + masked + cross-attention (translation) |
 | Multi-head | Parallel heads, concatenated and projected |
 | `nn.Linear` | Holds weights and performs the matrix math |

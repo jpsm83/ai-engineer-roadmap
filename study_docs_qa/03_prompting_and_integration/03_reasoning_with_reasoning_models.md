@@ -7,7 +7,7 @@
 ### Reasoning models
 
 **Q: What is reasoning model?**
-A: The scripts call this model `gpt-5-nano` (`REASONING_MODEL`). It thinks before it replies: inference time is spent on a hidden **chain of thought (CoT)**, then it returns a more careful response. It is strong at abstract reasoning — planning, coding, analysis, law, and other STEM work. The cheaper model in the same scripts is `gpt-6-luna` (`NON_REASONING_MODEL`) with `reasoning_effort="none"`.
+A: The scripts call this model `gpt-5-nano` (`REASONING_MODEL`). It thinks before it replies: inference time is spent on a hidden **chain of thought (CoT (chain of thought))**, then it returns a more careful response. It is strong at abstract reasoning — planning, coding, analysis, law, and other STEM work. The non-reasoning model in the same scripts is `gpt-6-luna` (`NON_REASONING_MODEL`) with `reasoning_effort="none"`.
 
 **Q: What is test-time compute?**
 A: Extra work at **inference**, not training. reasoning model spends that budget on hidden **reasoning tokens** that try strategies, catch errors, and break the problem down. More thinking time usually raises accuracy on tasks that benefit from a slow pass, and the loop gives extra chances to catch hallucinations.
@@ -16,13 +16,13 @@ A: Extra work at **inference**, not training. reasoning model spends that budget
 A: Hidden completion tokens used as a scratchpad. You do not see them, but they count toward **cost** and the **context limit**; if the total overflows, the output is truncated. They are **not** carried into the next turn, so each call reasons from scratch.
 
 **Q: How was reasoning model trained to reason?**
-A: Large-scale **reinforcement learning** teaches it to produce a chain of thought before answering. That internal CoT is longer and higher quality than what you get by writing "think step by step" yourself. Typical behaviors: break the problem into steps, try several strategies, and correct mistakes.
+A: Large-scale **reinforcement learning** teaches it to produce a chain of thought before answering. That internal CoT (chain of thought) is longer and higher quality than what you get by writing "think step by step" yourself. Typical behaviors: break the problem into steps, try several strategies, and correct mistakes.
 
 **Q: What is consensus voting?**
 A: A second way to spend inference compute: sample many answers and take the **majority**. When a good check exists, agreeing samples beat a single draw.
 
-**Q: Where does reasoning model outperform GPT-4o?**
-A: On reasoning-heavy evals: ML benchmarks, exams, PhD-level science (**GPQA Diamond**), and **MMLU**. On **MATH**, accuracy rose from 60.3% (GPT-4o) to 94.8% (reasoning model).
+**Q: Where does reasoning model outperform non resoning ones?**
+A: On reasoning-heavy evals: ML benchmarks, exams, PhD-level science (**GPQA Diamond**), and **MMLU**. On **MATH**, accuracy rose from 60.3% (non reasoning models) to 94.8% (reasoning model).
 
 ### Generator-verifier gap
 
@@ -42,13 +42,13 @@ A: Use `gpt-5-nano` when the task has a generator-verifier gap or needs a test-a
 ### Four principles
 
 **Q: What are the four prompting principles for reasoning model?**
-A: (1) **Simple and direct**, (2) **no explicit CoT**, (3) **structure**, (4) **show rather than tell**. reasoning model needs less prompt scaffolding than earlier chat models; over-instructing fights its built-in reasoning.
+A: (1) **Simple and direct**, (2) **no explicit CoT (chain of thought)**, (3) **structure**, (4) **show rather than tell**. reasoning model needs less prompt scaffolding than earlier chat models; over-instructing fights its built-in reasoning.
 
 **Q: Why keep reasoning model prompts simple and direct?**
 A: Straightforward instructions work best. State the task; do not wrap it in a recipe of sub-steps. Extra guidance often makes the reply more verbose without making it more correct.
 
 **Q: Should you ask reasoning model to think step by step?**
-A: No. Explicit CoT ("think step by step", "don't skip any steps", a numbered plan) interferes with the model's own reasoning and can yield bloated output, worse answers, or even refusals. A short task statement is usually enough; extra steps are the exception for a few nuanced jobs.
+A: No. Explicit CoT (chain of thought) ("think step by step", "don't skip any steps", a numbered plan) interferes with the model's own reasoning and can yield bloated output, worse answers, or even refusals. A short task statement is usually enough; extra steps are the exception for a few nuanced jobs.
 
 **Q: How should you structure a complex reasoning model prompt?**
 A: Split roles and data with delimiters: Markdown, quotes, or pseudo-XML such as `<instructions>`, `<policy>`, and `<user_query>`. Structure improves compliance and makes failures easier to locate.
@@ -72,7 +72,7 @@ A: **Orchestrator pattern:** (1) `gpt-5-nano` writes the plan once, (2) `gpt-6-l
 A: Role, goal, the executor it will hand off to, each available function (name, arguments, when to use it), and bounds (e.g., notify the user before finishing, ship what you can now, back-order the rest). Ask for the next steps of the plan, not a chatty essay.
 
 **Q: How should the executor be prompted?**
-A: `gpt-6-luna` still needs explicit CoT. Tell it to follow the plan **exactly**, then (1) read the policy, (2) identify the current step, (3) briefly explain the action, (4) call the matching tool. `create_chat_completion` sets `reasoning_effort="none"` for that model and loops `client.chat.completions.create` with `tools=TOOLS` until a terminal call such as `instructions_complete`. Set `parallel_tool_calls=False` if steps must stay ordered.
+A: `gpt-6-luna` still needs explicit CoT (chain of thought). Tell it to follow the plan **exactly**, then (1) read the policy, (2) identify the current step, (3) briefly explain the action, (4) call the matching tool. `create_chat_completion` sets `reasoning_effort="none"` for that model and loops `client.chat.completions.create` with `tools=TOOLS` until a terminal call such as `instructions_complete`. Set `parallel_tool_calls=False` if steps must stay ordered.
 
 **Q: Should reasoning model call the tools itself?**
 A: It can, but that is usually overkill. Reserve `gpt-5-nano` for the plan; let `gpt-6-luna` make the tool calls.
@@ -83,8 +83,8 @@ A: It can, but that is usually overkill. Reserve `gpt-5-nano` for the plan; let 
 
 ### Generate, edit, and compare
 
-**Q: How does reasoning model compare with GPT-4o on coding?**
-A: `get_chat_completion(REASONING_MODEL, prompt)` is the script path (`gpt-5-nano`). Use it when the spec needs structure, validation, and edge cases, not for a one-line snippet. The course compared this class of model with GPT-4o on that kind of coding.
+**Q: How does reasoning model compare with non reasoning models on coding?**
+A: `get_chat_completion(REASONING_MODEL, prompt)` is the script path (`gpt-5-nano`). Use it when the spec needs structure, validation, and edge cases, not for a one-line snippet. The course compared this class of model with non reasoning models on that kind of coding.
 
 **Q: How do you prompt reasoning model to write new code?**
 A: State the behavior, constraints, and export names; ask for **code only** if you need a drop-in file. A capable reasoning model will invent structure and validation instead of a thin scaffold.
@@ -104,8 +104,8 @@ A: Yes. Ask which option is better and why. That **LLM-as-judge** pass is useful
 **Q: How do you send an image to reasoning model?**
 A: `reasoning_model_vision` encodes the file as **base64** and passes a multimodal user message to `REASONING_MODEL`: text plus `image_url` with `data:image/png;base64,...`. Set `response_format={"type": "json_object"}` when you need a parseable extract.
 
-**Q: Why is reasoning model stronger than GPT-4o at image reasoning?**
-A: Vision plus test-and-learn: it can try a reading, check it against the picture, and drop hallucinated boxes or edges. GPT-4o often misreads dense diagrams (org charts, ER diagrams) that reasoning model gets right.
+**Q: Why is reasoning model stronger than non reasoning models at image reasoning?**
+A: Vision plus test-and-learn: it can try a reading, check it against the picture, and drop hallucinated boxes or edges. non reasoning models often misreads dense diagrams (org charts, ER diagrams) that reasoning model gets right.
 
 **Q: What is a hierarchy of reasoning for images?**
 A: Pay latency and cost **once** up front: have reasoning model preprocess the image into a rich structured index (JSON with ids, names, roles, and reporting links). Later questions use that text, not the pixels. You avoid re-encoding the image, and Q&A becomes cheaper, faster, and more consistent.
@@ -163,16 +163,16 @@ A: High-volume, low-reasoning steps, tight latency budgets, and lookups with no 
 
 | Term | Meaning |
 | --- | --- |
-| reasoning model | Reasoning model that thinks (hidden CoT) before it answers (gpt-5-nano) |
+| reasoning model | Reasoning model that thinks (hidden CoT (chain of thought)) before it answers (gpt-5-nano) |
 | non reasoning model | Faster, cheaper reasoning model variant for coding, math, and science (gpt-6-luna with reasoning_effort equals to none) |
 | Test-time compute | Extra inference work that improves reasoning accuracy |
 | Reasoning tokens | Hidden billed tokens; count toward context; not kept across turns |
-| Chain of thought | Stepwise internal reasoning; reasoning model does this without being asked |
+| Chain of thought (CoT) | Stepwise internal reasoning; reasoning model does this without being asked |
 | Consensus voting | Sample many answers and keep the majority |
-| MATH | Math-reasoning benchmark; reasoning model 94.8% vs. GPT-4o 60.3% |
+| MATH | Math-reasoning benchmark; reasoning model 94.8% vs. non reasoning models 60.3% |
 | Generator-verifier gap | Checking a solution is easier than producing one |
 | Simple and direct | Short, literal task; no extra recipe |
-| No explicit CoT | Do not add "think step by step"; it can hurt reasoning model |
+| No explicit CoT (chain of thought) | Do not add "think step by step"; it can hurt reasoning model |
 | Structure | Markdown, quotes, or XML tags that separate roles and data |
 | Show rather than tell | One or two examples instead of a long rule list |
 | Orchestrator | `gpt-5-nano` plans; `gpt-6-luna` executes with `tools` |

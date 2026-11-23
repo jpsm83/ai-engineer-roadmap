@@ -121,7 +121,7 @@ A: Ask for the sentiment and, if code will consume it, restrict the answer to a 
 A: Ask for a short list (cap the count and the format) or a yes/no for one emotion such as anger. Tight output specs keep results consistent.
 
 **Q: How do you pull several fields in one call?**
-A: List every field, require JSON (or another schema), and say what to use when a value is missing (`unknown`). One LLM call can replace several traditional NLP models.
+A: List every field, require JSON (or another schema), and say what to use when a value is missing (`unknown`). One LLM call can replace several traditional NLP (natural language processing) models.
 
 ### Topics
 
@@ -173,7 +173,7 @@ A: The sampling randomness of the completion. **`temperature=0`** always picks t
 ### Chat format
 
 **Q: How does a chat API differ from a single prompt?**
-A: You send a list of **messages** instead of one string. Each message has a role and content. Call `client.chat.completions.create` (current OpenAI Python SDK) and read `response.choices[0].message.content`. The course notebooks used the removed `openai.ChatCompletion.create` API.
+A: You send a list of **messages** instead of one string. Each message has a role and content. Call `client.chat.completions.create` (current OpenAI Python SDK (software developer kit)) and read `response.choices[0].message.content`. The course notebooks used the removed `openai.ChatCompletion.create` API.
 
 **Q: What does each role do?**
 A: **`system`** sets persona and standing rules (how to behave for the whole conversation). **`user`** is the human turn. **`assistant`** is a previous model turn you are feeding back.
@@ -212,7 +212,7 @@ A: Summaries, inferences, transformations, expansions, and chatbots — often in
 | --- | --- |
 | Prompt engineering | Steering an LLM with instructions instead of training a new model |
 | Base LLM | Next-word model; continues text rather than following a task |
-| Instruction-tuned LLM | Base model fine-tuned on instructions, then RLHF |
+| Instruction-tuned LLM | Base model fine-tuned on instructions, then RLHF (reinforcement learning from human feedback) |
 | RLHF | Human preference training toward helpful, honest, harmless |
 | Delimiter | Marker that separates instructions from data |
 | Prompt injection | User text that tries to override the intended task |
