@@ -35,6 +35,7 @@ class CSVLoader(BaseLoader):
                     metadata={"source": str(self.file_path), "row": i},
                 )
 
+# Hide warnings from the older chain and vectorstore classes.
 warnings.filterwarnings('ignore')
 
 # Render an IPython Markdown value in the terminal.
@@ -45,9 +46,11 @@ def display(obj):
     print(RichMarkdown(text or ""))
 
 # After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
-# temperature=1 is the value this call sends.
+# temperature controls how much the replies vary; this call passes 1.
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
@@ -76,8 +79,9 @@ in a table in markdown and summarize each one."
 
 # display(Markdown(response))
 
-# The same index, one step at a time.
+# The same retrieve-and-answer path, built in the open. The store below is a second one, not index.
 # loader.load() runs lazy_load and returns every row as a Document. docs[0] would be the first product.
+
 docs = loader.load()
 
 # print(docs[0])
@@ -91,7 +95,9 @@ embed = embeddings.embed_query("Hi my name is Joao")
 
 # print(embed[:5])
 
-# from_documents embeds the catalog and stores it. This is the store the index creator built above.
+# from_documents embeds the catalog into a new store, db.
+# index above is a different store, the one VectorstoreIndexCreator built.
+# qa_stuff searches db. index.query still searches index.
 db = InMemoryVectorStore.from_documents(
     docs, 
     embeddings
@@ -131,8 +137,9 @@ qa_stuff = RetrievalQA.from_chain_type(
 )
 
 # This query replaces the short suggestion. Both calls below use it.
-# qa_stuff.run is the step-by-step chain. index.query is the one-liner from the top, now actually called.
-# The two displays are there so the answers can be compared.
+# qa_stuff.run answers from db, the step-by-step store.
+# index.query is the one-liner from the top, and it answers from index.
+# The two displays are there so those two stores' answers can be compared.
 query =  "Please list all your shirts with sun protection in a table \
 in markdown and summarize each one."
 

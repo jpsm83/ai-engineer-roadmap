@@ -20,7 +20,9 @@ warnings.filterwarnings('ignore')
 
 # After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
@@ -33,7 +35,7 @@ df = pd.read_csv('Data.csv')
 
 df.head()
 
-# Chat model for every chain in this file. temperature=1 is the value this call sends.
+# Chat model for every chain in this file. temperature controls how much the replies vary; this call passes 1.
 llm = ChatOpenAI(temperature=1, model=llm_model)
 
 # The product name the naming chains inside the unused string would describe.
@@ -43,10 +45,13 @@ product = "Queen Size Sheet Set"
 # LLMChain: one prompt, a company name for a maker of {product}, then chain.run(product).
 # SimpleSequentialChain: chain_one names the company, chain_two writes 20 words from {company_name}.
 # That chain passes the first chain's text straight through as the only input of the next.
-# SequentialChain: four named steps on one review. Each output_key is the slot the next prompt fills
-# by the same name: English_Review, summary, language, then followup_message.
-# input_variables is Review. language is computed and used, and it is left out of output_variables.
-# overall_chain is called on df.Review[5]. A second ChatOpenAI inside this string would replace llm.
+# SequentialChain: four steps on one review. chain_one translates {Review} into English_Review.
+# chain_two summarizes {English_Review} into summary. chain_three reads {Review} again and names the language.
+# chain_four writes followup_message from {summary} and {language}.
+# input_variables is Review. language is used by chain_four and left out of output_variables.
+# overall_chain is called on df.Review[5].
+# A second ChatOpenAI inside this string would replace llm, passing temperature 0.9 instead of 1. It does not run.
+
 '''
 prompt = ChatPromptTemplate.from_template(
     "What is the best name to describe \
@@ -144,6 +149,7 @@ print(overall_chain(review))
 '''
 # The router is the chain this file actually runs.
 # Four destination prompts, each with an {input} slot. The persona is what that chain's model sees.
+
 physics_template = """You are a very smart physics professor. \
 You are great at answering questions about physics in a concise\
 and easy to understand manner. \
@@ -235,7 +241,7 @@ default_prompt = ChatPromptTemplate.from_template("{input}")
 default_chain = LLMChain(llm=llm, prompt=default_prompt)
 
 # Instructions for the router model. .format below fills {destinations}.
-# {{input}} stays as the literal slot {input}, which PromptTemplate fills on each question.
+# {input} stays as the literal slot {input}, which PromptTemplate fills on each question.
 # The model is told to return JSON with destination and next_inputs.
 # destination has to be one of the names above, or DEFAULT.
 MULTI_PROMPT_ROUTER_TEMPLATE = """Given a raw text input to a \

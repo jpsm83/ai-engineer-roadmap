@@ -72,7 +72,9 @@ def create_python_agent(llm, tool, verbose=True, **kwargs):
 
 # After 2024-06-12 the model is gpt-4o-mini; on or before that date it is gpt-5-nano.
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
     llm_model = "gpt-4o-mini"
 else:
@@ -80,8 +82,10 @@ else:
 
 # llm-math and wikipedia are ready-made tools. load_tools builds them and passes llm through,
 # because llm-math needs its own model call. The model sees each tool's name and description.
-# The tool runs when the agent calls it. temperature=1 is the value this model is called with.
+# The tool runs when the agent calls it.
+# temperature controls how much the replies vary; this call passes 1.
 # initialize_agent here is the function above. The 25% question is the math-tool path, left commented.
+
 llm = ChatOpenAI(temperature=1, model=llm_model)
 
 tools = load_tools(["llm-math","wikipedia"], llm=llm)
@@ -112,6 +116,7 @@ print(result)
 
 # This agent replaces the math-and-wikipedia agent. Nothing called that one.
 # PythonREPLTool is a REPL: the model writes code, the tool executes it, and the output comes back.
+
 agent = create_python_agent(
     llm,
     tool=PythonREPLTool(),
@@ -144,6 +149,7 @@ set_debug(False)
 
 # @tool publishes time to the model. The docstring is the description the model reads.
 # The function body is what runs. text is ignored. The return is today's date as a string.
+
 @tool
 def time(text: str) -> str:
     """Returns todays date, use this for any \

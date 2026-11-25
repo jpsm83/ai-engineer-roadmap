@@ -42,7 +42,9 @@ warnings.filterwarnings('ignore')
 
 # After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
@@ -52,7 +54,8 @@ else:
 # The index embeds those rows into an in-memory store. RetrievalQA searches that store.
 # chain_type "stuff" joins the retrieved rows and asks once.
 # document_separator is the string placed between those rows inside the prompt.
-# verbose=True prints the prompt. temperature=1 is the value the chat model is called with.
+# verbose=True prints the prompt. temperature controls how much the replies vary; llm passes 1.
+
 file = 'OutdoorClothingCatalog_1000.csv'
 loader = CSVLoader(file_path=file)
 data = loader.load()
@@ -77,10 +80,12 @@ qa = RetrievalQA.from_chain_type(
 )
 
 # data[10] would show one catalog row, a source for a test question.
+
 # print(data[10])
 
 # Two known question/answer pairs. The keys are query and answer.
 # The grader and the prediction loop below look up those same names.
+
 examples = [
     {
         "query": "Do the Cozy Comfort Pullover Set\
@@ -95,9 +100,10 @@ examples = [
 ]
 
 # QAGenerateChain asks the model for a question and answer drawn from one document.
-# This ChatOpenAI is a separate model from the qa chain's llm.
+# This ChatOpenAI is separate from the qa chain's llm, and it does not pass temperature.
 # RegexParser replaces the default parser. output_keys are query and answer,
 # the same names as the hand-written examples.
+
 # Default parser expects "ANSWER: ..." on one line; newer models often
 # put a newline (or a bullet list) after ANSWER:.
 example_gen_chain = QAGenerateChain.from_llm(
@@ -131,12 +137,14 @@ new_examples = [
 
 # Hand-written pairs stay first. Generated ones are appended.
 # The commented run would answer examples[0], the cozy-pullover question, with no grade yet.
+
 examples += new_examples
 
 # print(qa.run(examples[0]["query"]))
 
 # set_debug(True) prints the chain's prompts and outputs. The run itself stays commented.
 # set_debug(False) turns that tracing off before the graded pass.
+
 set_debug(True)
 
 # print(qa.run(examples[0]["query"]))
@@ -145,17 +153,20 @@ set_debug(True)
 set_debug(False)
 
 # qa.apply runs every example. Each prediction keeps query, the real answer, and result,
-# which is the chain's answer. QAEvalChain grades result against that answer.
-# evaluate returns one grade dict per example. output_key is the field that holds the grade.
-# The loop prints the question, both answers, and the grade. The last print is the first grade dict.
+# which is the chain's answer.
+
 predictions = qa.apply(examples)
 
 # print(predictions)
 
+# QAEvalChain grades each result against the real answer.
+# evaluate returns one grade dict per example. output_key is the field that holds the grade.
 eval_chain = QAEvalChain.from_llm(llm)
 
 graded_outputs = eval_chain.evaluate(examples, predictions)
 
+# One panel per example: the question, the real answer, the chain's answer, and the grade.
+# The print after the loop is the first grade dict on its own.
 for i, eg in enumerate(examples):
     print(Panel.fit(
         f"[bold]Question:[/bold] {predictions[i]['query']}\n"

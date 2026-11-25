@@ -62,7 +62,6 @@ class ConversationBufferMemory(BaseMemory):
         self.messages.append(AIMessage(content=outputs[output_key]))
 
     def clear(self) -> None:
-        # Drop every stored turn.
         self.messages = []
 
 # Load the API key ChatOpenAI reads, and hide deprecation warnings from the older chain classes.
@@ -72,9 +71,12 @@ _ = load_dotenv(find_dotenv()) # read local .env file
 warnings.filterwarnings('ignore')
 
 # After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
-# ChatOpenAI takes that name. temperature=1 is the value this call sends.
+# ChatOpenAI takes that name. temperature controls how much the replies vary; this call passes 1.
+
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
@@ -168,6 +170,7 @@ print(memory.load_memory_variables({}))
 
 # The summary memory is the part that runs. The triple-quoted block above is skipped.
 # schedule is one long day plan, long enough that the buffer has something to summarize.
+
 # create a long string
 schedule = "There is a meeting at 8am with your product team. \
 You will need your powerpoint presentation prepared. \

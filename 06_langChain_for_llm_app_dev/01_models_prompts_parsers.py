@@ -16,7 +16,9 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # After 2024-06-12 the lesson uses gpt-5-nano; on or before that date it uses gpt-6-luna.
 # get_completion and ChatOpenAI both read llm_model.
 current_date = datetime.datetime.now().date()
+
 target_date = datetime.date(2024, 6, 12)
+
 if current_date > target_date:
  llm_model = "gpt-5-nano"
 else:
@@ -24,7 +26,9 @@ else:
 
 # Smallest path in the file: one user string in, the assistant's reply text out.
 # create() returns a completion; the text is choices[0].message.content.
+# temperature=1 lets that reply vary. The model name defaults to llm_model.
 # The LangChain chat object below does this same job without building the messages list here.
+
 def get_completion(prompt, model=llm_model):
  messages = [{"role": "user", "content": prompt}]
  response = client.chat.completions.create(
@@ -64,8 +68,9 @@ text: ```{customer_email}```
 # print(response)
 
 # Same chat call, now through LangChain. ChatOpenAI is the model object.
-# It uses the llm_model name from above. temperature=1.0 is the value this call sends.
+# It uses the llm_model name from above.
 # print(chat) would show the model object, not a reply.
+
 # To control the randomness and creativity of the generated
 # text by an LLM, use temperature = 0.0
 chat = ChatOpenAI(temperature=1.0, model=llm_model)
@@ -74,6 +79,7 @@ chat = ChatOpenAI(temperature=1.0, model=llm_model)
 # The template replaces the f-string. {style} and {text} are the slots.
 # from_template reads those names off the string. format_messages is what fills them.
 # The prints would show the template text and the slot names.
+
 template_string = """Translate the text \
 that is delimited by triple backticks \
 into a style that is {style}. \
@@ -142,6 +148,7 @@ service_messages = prompt_template.format_messages(style=service_style_pirate, t
 
 # The dict is the shape the lesson wants from a review: gift, delivery_days, price_value.
 # Nothing reads it. It is here so those keys are visible before a prompt asks for them.
+
 {
   "gift": False,
   "delivery_days": 5,
@@ -182,8 +189,9 @@ price_value
 text: {text}
 """
 
-# This prompt_template replaces the translation template.
-# format_messages fills {text} with the review. The chat line rebuilds the same model for this section.
+# This prompt_template replaces the translation template. The only slot now is {text}.
+# format_messages fills that slot with the review.
+# The chat line replaces the earlier ChatOpenAI with the same model and the same temperature.
 # invoke would return an AI message whose .content is still a string when the text looks like JSON.
 # That is why .get('gift') cannot work on it. The parser below is what turns the string into a dict.
 prompt_template = ChatPromptTemplate.from_template(review_template)
@@ -203,6 +211,7 @@ chat = ChatOpenAI(temperature=1.0, model=llm_model)
 # Each ResponseSchema is one field the parser will look for.
 # name becomes the dict key. description is the instruction the model sees for that field.
 # These objects do not extract anything. They only describe the JSON shape.
+
 gift_schema = ResponseSchema(name="gift", description="Was the item purchased\
 as a gift for someone else? \
 Answer True if yes,\
@@ -231,7 +240,8 @@ format_instructions = output_parser.get_format_instructions()
 # print(format_instructions)
 
 # Second review template. It adds a {format_instructions} slot beside {text}.
-# prompt is the template used for the call that actually runs. Both slots are filled together.
+# prompt replaces the translation f-string of the same name. This one is a ChatPromptTemplate.
+# Both slots are filled together.
 review_template_2 = """\
 For the following text, extract the following information:
 
@@ -254,6 +264,7 @@ prompt = ChatPromptTemplate.from_template(template=review_template_2)
 messages = prompt.format_messages(text=customer_review, format_instructions=format_instructions)
 
 # The call this file actually runs.
+# This messages list replaces the earlier one. That list had no format instructions.
 # messages[0].content is the filled prompt: the review plus the format instructions.
 # invoke returns an AI message; response.content is the model's string.
 # parse turns that string into a dict keyed by gift, delivery_days, and price_value.
