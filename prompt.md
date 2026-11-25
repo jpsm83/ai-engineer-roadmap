@@ -65,6 +65,10 @@ These lessons are usually one script that runs from top to bottom, like a notebo
 
 When the lesson is the algorithm itself, comment the data flow. Above each step, say which tensor comes in, which tensor goes out, and why that step is there. The first time a learned weight, a mask, or a stack of heads appears, say what it does to that tensor. When later lines repeat the calculation in the open so each matrix can be printed, say that those lines are the same path and what the last result should match. Still do not change the math, the names, the tensor values, a docstring, or a tutorial bug. A `#` comment is the only addition.
 
+## Shared helpers
+
+When the file is imported by other lessons and is not itself a top-to-bottom script, comment what each function provides to those lessons, so the helper can be read without the lesson open. Say what the importer receives, and the first time say what the model sees versus what actually runs. Later functions that play the same role can be one line. Still do not change lesson code, docstrings, or tutorial bugs. A `#` comment is the only addition.
+
 ## Shape of a good comment
 
 Explain the role, the data, and the reason. Do not restate the syntax.

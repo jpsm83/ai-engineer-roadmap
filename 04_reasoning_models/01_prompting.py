@@ -1,14 +1,16 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 
-# Warning control
+# Drop library warnings so the printed reply is the lesson, not deprecation noise.
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import OpenAI key
+# Load OPENAI_API_KEY from a local .env. OpenAI() below takes this value as api_key.
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
+# Pieces for showing model output outside a notebook:
+# HTML and Markdown objects, a temp file, and the browser that opens it at exit.
 import atexit
 import html
 import json
@@ -21,6 +23,7 @@ from IPython.display import display as ipython_display
 from openai import OpenAI
 from rich import print
 
+# True only inside a Jupyter kernel. A plain script has no IPython shell, so this is False.
 def _in_notebook():
     try:
         from IPython import get_ipython
@@ -29,8 +32,12 @@ def _in_notebook():
     except Exception:
         return False
 
+# HTML fragments collected while the script runs. The exit hook turns them into one page.
 _DISPLAY_PARTS = []
 
+# In a notebook, show the object in the cell and stop.
+# In a script, keep HTML as-is, stash Markdown source for the page to render later,
+# and wrap anything else in a <pre>. Nothing is shown until the process exits.
 def display(obj):
     if _in_notebook():
         ipython_display(obj)
@@ -44,6 +51,9 @@ def display(obj):
     else:
         _DISPLAY_PARTS.append(f"<pre>{html.escape(str(obj))}</pre>")
 
+# At exit, if this is a script and anything was displayed, write one HTML file and open it.
+# Markdown stashed above is rendered in that page. A notebook already showed the cells,
+# so this returns without writing a file.
 def _open_display_in_browser():
     if _in_notebook() or not _DISPLAY_PARTS:
         return
@@ -76,18 +86,29 @@ def _open_display_in_browser():
     print(f"Opening {path}")
     webbrowser.open(path.as_uri())
 
+# Run that writer when the process ends, after the calls below have filled _DISPLAY_PARTS.
 atexit.register(_open_display_in_browser)
 
+# One client for every completion in this file.
 client = OpenAI(api_key=openai_api_key)
+# NON_REASONING_MODEL is the one create_chat_completion turns reasoning off for.
+# REASONING_MODEL is left on its default so it can think before it answers.
 NON_REASONING_MODEL = 'gpt-6-luna'
 REASONING_MODEL = 'gpt-5-nano'
 
+# chat.completions.create returns a completion; the reply text is choices[0].message.content.
+# reasoning_effort "none" is sent only for the non-reasoning model.
 def create_chat_completion(model, messages):
     kwargs = {"model": model, "messages": messages}
     if model == NON_REASONING_MODEL:
         kwargs["reasoning_effort"] = "none"
     return client.chat.completions.create(**kwargs)
 
+# Earlier comparisons stay in one unused string so they do not call the API.
+# In order: a SMILES prompt that spells the steps out (the reasoning model already
+# does that, so the steps get in the way); the same ask with no steps; a policy
+# prompt on a refund, then on a haiku it should refuse; a lawyer prompt with no
+# worked example. The live call below is that lawyer prompt plus the example.
 '''
 # ============================================== bad prompt ==============================================
 
@@ -190,6 +211,10 @@ display(Markdown(response.choices[0].message.content))
 display(HTML('<div style="background-color: #fff4f4; padding: 10px; border-radius: 5px; border: 1px solid #d3d3d3;"></hr><h2>🔼 &nbsp; Markdown Output – End</h2></hr></div>'))
 '''
 
+# Same legal question as the unused block, now with a worked example in the prompt.
+# The <example> is a different question (joint marketing) and a cited answer.
+# The model is meant to copy that shape for the supplier-incentives query
+# concatenated on the end: name the rule, cite a case, then recommend.
 legal_query = ("<query>A larger company is offering suppliers incentives not to do "
                "business with me. Is this legal?</query>")
 example_prompt = ("<prompt>You are a lawyer specializing in competition law, "
@@ -226,11 +251,15 @@ While joint marketing campaigns between competitors are not inherently illegal, 
 </response>
 </example>""")
 
+# Send the example prompt plus the legal question.
+# The reply text the banners wrap is choices[0].message.content.
 response = create_chat_completion(REASONING_MODEL, [{
                                               "role": "user",
                                               "content": example_prompt + legal_query
                                           }])
 
+# Show the reply as Markdown between the green and red banners.
+# In a script those three display() calls become the page opened at exit.
 display(HTML('<div style="background-color: #f0fff8; padding: 10px; border-radius: 5px; border: 1px solid #d3d3d3;"></hr><h2>🔽 &nbsp; Markdown Output – Beginning</h2></hr></div>'))
 display(Markdown(response.choices[0].message.content))
 display(HTML('<div style="background-color: #fff4f4; padding: 10px; border-radius: 5px; border: 1px solid #d3d3d3;"></hr><h2>🔼 &nbsp; Markdown Output – End</h2></hr></div>'))

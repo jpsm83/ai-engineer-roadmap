@@ -3,6 +3,9 @@ from dotenv import load_dotenv, find_dotenv
 from redlines import Redlines
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
+# TOOLS is the function schemas in functionDefinitions.py.
+# The conversion prompt pastes that list in, and the agent call passes the same list
+# as tools=, so the routine may only name functions the model is actually given.
 from functionDefinitions import TOOLS
 import csv
 import json
@@ -13,41 +16,50 @@ import math
 from termcolor import colored
 import tiktoken 
 
-# Warning control
+# Drop library warnings so the printed routine and eval are the lesson.
 import warnings
 warnings.filterwarnings('ignore')
 
 import base64
 
-# Import OpenAI key
+# Load OPENAI_API_KEY from a local .env. OpenAI() below takes this value as api_key.
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 from openai import OpenAI
 from rich import print
 
+# One client. The routine is written by the reasoning model.
+# The eval agent and the simulated customer use the non-reasoning model.
 client = OpenAI(api_key=openai_api_key)
 NON_REASONING_MODEL = 'gpt-6-luna'
 REASONING_MODEL = 'gpt-5-nano'
+# This file's folder, so the policy and the eval CSV are found next to the script.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+# chat.completions.create returns a completion. Extra kwargs carry tools or response_format.
+# reasoning_effort "none" is sent only when the model is NON_REASONING_MODEL.
 def create_chat_completion(model, messages, **kwargs):
     request = {"model": model, "messages": messages, **kwargs}
     if model == NON_REASONING_MODEL:
         request["reasoning_effort"] = "none"
     return client.chat.completions.create(**request)
 
+# Notebook-shaped wrapper. The lesson text lives on .data.
 class Markdown:
     def __init__(self, data):
         self.data = data
 
+# Prints that text. An object with no .data is printed as itself.
 def display(obj):
     print(getattr(obj, "data", obj))
 
+# Show full cells when an eval table is printed. The default would cut them off.
 pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
 
+# Redlines marks what changed between two strings. output_markdown is that diff as markdown.
 def compare_strings(string1, string2):
     # Create a Redlines object to compare the strings
     diff = Redlines(string1, string2)
@@ -55,16 +67,22 @@ def compare_strings(string1, string2):
     # Display the differences using Markdown
     display(Markdown(diff.output_markdown))
 
-# Example usage
+# Small demo of that diff, before the policy work. "original" versus "modified".
 string_a = "This is the original text for comparison purposes."
 string_b = "This is the modified text to compare for differences."
 
 compare_strings(string_a, string_b)
 
+# The public help-center article. generate_routine turns this into an internal routine.
+# The commented print would show the article before that conversion.
 with open(os.path.join(BASE_DIR, 'originalPolicy', 'flightCancellationsPolicy.md'), 'r') as file:
     flight_cancellation_policy = file.read()
     # print(flight_cancellation_policy)
 
+# Instructions for the reasoning model: turn the help-center article into a step-by-step routine.
+# This is an f-string, so {TOOLS} is filled now with the schemas from functionDefinitions.
+# Function names in the routine must be those schemas, wrapped in backticks, and the last
+# step must be `case_resolution`. extract_function_names later reads those backticks.
 CONVERSION_PROMPT = f"""
 You are a helpful assistant tasked with taking an external facing help center article and converting it into a internal-facing programmatically executable routine optimized for an LLM. 
 The LLM using this routine will be tasked with reading the policy, answering incoming questions from customers, and helping drive the case toward resolution.
@@ -96,6 +114,8 @@ TOOLS: {TOOLS}
 
 Please convert the following customer service policy into the formatted routine, ensuring it is easy to follow and execute programmatically. Ensure that you **only** use the functions provided and do **not** create net new functions."""
 
+# One user message: the conversion instructions plus this policy.
+# Returns the routine as text from choices[0].message.content.
 def generate_routine(policy):
     try:
         messages = [
@@ -118,10 +138,13 @@ def generate_routine(policy):
         print(f"An error occurred: {e}")
         raise
 
+# Write the routine with the reasoning model and print it.
 flight_cancellation_routine = generate_routine(flight_cancellation_policy)
 
 display(Markdown(flight_cancellation_routine))
 
+# Multiset difference of two lists. The print loops are commented out,
+# so a call computes the diff and shows nothing until those prints are turned back on.
 def compare_lists(a, b):
     # Create Counters for both lists
     counter_a = Counter(a)
@@ -141,23 +164,27 @@ def compare_lists(a, b):
     # for item, count in diff_b.items():
     #     print(f"{item}: {count}")
 
+# Every backtick span in the routine. The conversion prompt required function names in backticks.
 def extract_function_names(text):
     # Use regex to match text between backticks and extract function names
     pattern = r'`(.*?)`'
     matches = re.findall(pattern, text)
     return matches
 
-# Extract a unique list of the functions in the generated routine
+# Names the routine wrapped in backticks, against the names in TOOLS.
+# A name in the routine that is not in TOOLS would need a function the helper does not define.
+# A TOOLS name missing from the routine is a defined tool this routine never mentioned.
+# compare_lists leaves its prints commented, so this call is silent.
 function_names_from_reasoning_model = set(extract_function_names(flight_cancellation_routine))
 
 # Extract the list of TOOLs we provided the model
 function_names_defined = [tool["function"]["name"] for tool in TOOLS if tool["type"] == "function"]
 
-# Print the differences
-## Items that are in A and not in B need functions written for them
-## Items that are in B and not in A are fine, they are just unused in the routine the model has written
 compare_lists(function_names_from_reasoning_model, function_names_defined)
 
+# One agent turn. The system message is the policy (the generated routine, in the eval below).
+# tools=TOOLS and parallel_tool_calls=False: the model may answer in text or request one tool.
+# Returns the message object. Callers read .content and .tool_calls, not the whole completion.
 def agent_response(transcript, policy, model):
     try:
         messages = [
@@ -185,9 +212,16 @@ POLICY:
         print(f"An error occurred: {e}")
         print(messages)
 
+# CSV blanks arrive as NaN floats. Those become "" so the customer prompt does not say "nan".
 def safe_str(value):
     return "" if (isinstance(value, float) and math.isnan(value)) else str(value)
 
+# One eval case. The agent follows `policy`. A second call to the same model plays the customer,
+# using the details on this CSV row. expected_inputs is a JSON string of the arguments we want.
+# verify_identity, ask_clarification, the ticket and fare lookups, get_refund_amount, and the
+# two flight lookups are answered here and the loop continues. Any other tool call stops the
+# loop: that name and its arguments are what the row is graded on. Ten turns with no such
+# call leaves actual_function empty and is_correct false.
 def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
     # Extract variables from test_row
     context = test_row['context']
@@ -203,6 +237,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
     expected_inputs_str = test_row['expected_inputs']
     expected_inputs = json.loads(expected_inputs_str)
 
+    # System prompt for the model that plays the customer.
+    # A blank medical certificate is left out of the details.
     CUSTOMER_PROMPT = f"""<objective>You are a customer named {full_name} trying to resolve an issue with a customer service agent.
     Continue providing the information the agent requests so they can solve your issue.
     If you have the information in your *details* then use that. Otherwise, generate an appropriate answer.</objective>
@@ -231,6 +267,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
     loop_count = 0
     while True:
         loop_count += 1
+        # Stop after ten turns. No graded tool call means this row is wrong.
         if loop_count > 10:
             actual_function = None
             actual_inputs = None
@@ -247,7 +284,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
             tool_calls = None
         
         if not tool_calls:
-            # Append assistant's message to transcript
+            # The agent spoke instead of calling a tool. Ask the customer model to reply,
+            # then go around again. The customer system prompt is the row's details.
             transcript.append({"role": "assistant", "content": assistant_message_content})
             
             # Get customer response
@@ -269,7 +307,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
             arguments = json.loads(tool_call.function.arguments)
             
             if function_name == 'verify_identity':
-                # Append assistant's message to transcript
+                # Always answers "True". tool_call_id has to be the id on the request
+                # so the next turn can match this result. Then the agent goes again.
                 transcript.append(response.to_dict())
                 
                 # Simulate the tool response
@@ -281,7 +320,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'ask_clarification':
-                # Take the 'prompt' from arguments and use it as assistant message
+                # The prompt argument is spoken to the customer as assistant text.
+                # There is no tool message for this name. The customer model answers it.
                 clarification_prompt = arguments.get('prompt')
                 
                 # Append assistant's clarification message
@@ -299,6 +339,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'check_ticket_type':
+                # Answer with this row's ticket type and fare rules, then keep going.
                 # Append assistant's message to transcript
                 transcript.append(response.to_dict())
                 
@@ -310,6 +351,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'check_fare_rules':
+                # Same ticket type and fare rules. A partial_refund fare also includes the refund amount.
                 # Append assistant's message to transcript
                 transcript.append(response.to_dict())
                 
@@ -324,6 +366,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'get_refund_amount':
+                # Answer with this row's refund amount, then keep going.
                 # Append assistant's message to transcript
                 transcript.append(response.to_dict())
                 
@@ -335,6 +378,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'check_next_available_flight':
+                # Answer with a fixed flight, LMG091 at 10:00 AM tomorrow, then keep going.
                 # Append assistant's message to transcript
                 transcript.append(response.to_dict())
                 
@@ -347,6 +391,7 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             elif function_name == 'provide_alternative_options':
+                # Answer with a fixed flight, FR9876 at 5:00 PM tomorrow, then keep going.
                 # Append assistant's message to transcript
                 transcript.append(response.to_dict())
                 
@@ -359,6 +404,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
                 # Continue the loop
                 continue
             else:
+                # Any other tool is the graded action. Stop and compare its name and
+                # arguments, as strings, to expected_function and expected_inputs.
                 # if verbose:
                     # print('Got a successful function call')
                 # Stop and compare function call and arguments with expected_function and expected_inputs
@@ -382,7 +429,8 @@ def process_row(row_number,test_row,policy,model,iteration=0, verbose=False):
         'transcript': transcript
     }
 
-# added post-filming to address transcript size
+# Shorten a transcript for display. A tool call becomes {name, arguments}.
+# Every other message is left as stored, so the printed row is not the raw tool object.
 def filter_messages(message_list):
     messages = []
     for item in message_list:
@@ -398,6 +446,9 @@ def filter_messages(message_list):
     return messages
 
 
+# Run process_row on every eval row at once. Each finished row is appended as it completes.
+# cleaned_transcript is the shortened form from filter_messages.
+# total_accuracy is the fraction of rows whose final tool call matched.
 def evaluate_function_calls(df, policy, model, i=0, verbose=False):
     records = []
 
@@ -414,9 +465,13 @@ def evaluate_function_calls(df, policy, model, i=0, verbose=False):
     total_accuracy = df['is_correct'].mean()
     return df, total_accuracy
 
+# Spreadsheet of cases: the customer details, the expected final function, and its arguments.
+# The commented print would show the first rows before the eval runs.
 eval_df = pd.read_csv(os.path.join(BASE_DIR, 'evals', 'policyEvals.csv'))
 # print(eval_df.head())
 
+# One case, side by side: the spreadsheet row, and the actual function, inputs, and transcript.
+# User lines print blue. Every other line prints red. eval_df and df are the tables below.
 def display_row(index):
     eval_row = eval_df.iloc[index]
     df_row = df.iloc[index][["actual_function", "actual_inputs", "is_correct", "cleaned_transcript"]]
@@ -434,6 +489,8 @@ def display_row(index):
         color = "blue" if role == "user" else "red"
         print(colored(str(entry), color))
 
+# Grade the generated routine with the non-reasoning model, then print the accuracy.
+# display(df) would show every row. display_row(8) shows one case instead.
 df, accuracy = evaluate_function_calls(eval_df, flight_cancellation_routine, NON_REASONING_MODEL)
 
 # Display the accuracy as a mini header
@@ -443,6 +500,8 @@ display(Markdown(f"### Accuracy: {accuracy:.2%}"))
 
 display_row(8)
 
+# One completion, optionally forced into a JSON schema.
+# Returns the reply text. The improvement loop below is what would pass OUTPUT_SCHEMA.
 def get_openai_response(messages, model, response_format=None):
     try:
         if response_format:
@@ -458,6 +517,8 @@ def get_openai_response(messages, model, response_format=None):
         print(f"An error occurred: {e}")
 
 
+# Schema the improvement call would require: one key, final_answer, and no extras.
+# strict means the model must match this object. The loop reads that key as the new routine.
 OUTPUT_SCHEMA = {
                     "name": "policy_output",
                     "schema": {
@@ -471,6 +532,9 @@ OUTPUT_SCHEMA = {
                     "strict": True
                 }
 
+# Opening message for the meta-prompt: improve the routine using the original policy and TOOLS.
+# The routine text and the eval table are not in this message. The unused loop below appends them.
+# The model is told to return only the improved policy, under the final_answer key.
 start_reasoning_model_message = [
     {
         "role": "user",
@@ -517,6 +581,7 @@ Return the improved policy exactly as written within the defined JSON. Remove al
      }
 ]
 
+# Tokenizer for the unused loop's length check. It counts the message contents joined together.
 encoding = tiktoken.get_encoding("o200k_base")
 
 def num_tokens_from_messages(messages):
@@ -526,6 +591,11 @@ def num_tokens_from_messages(messages):
     tokens = encoding.encode(entire_input)
     return len(tokens)
 
+# The improvement loop stays in this unused string so it does not run.
+# Three times it would send the latest routine and eval table to the reasoning model,
+# read final_answer as the next routine, grade that with the non-reasoning model,
+# and keep older tables only while they fit under 120000 tokens. Then it would plot
+# accuracy and print the routine from the best run. The banner inside says not to run it.
 '''
 # =======================================================================================================
 # ========================== WARNING: CODE BELOW IS FOR LEARNING PURPOSES ONLY ==========================

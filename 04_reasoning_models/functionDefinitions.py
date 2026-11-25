@@ -1,4 +1,13 @@
+# Schemas imported by 05_meta_prompting.py as TOOLS.
+# That lesson pastes this list into the prompt that writes a routine, and passes
+# the same list as tools= so the agent can request these names.
+# Each entry is what the model sees: a name, a description, and parameters. Nothing here runs.
+# Some names are lookups: the eval answers and the conversation continues. Each of those says how.
+# Any other name is a graded final action: the eval stops and compares the arguments to the row.
+# The conversion prompt also requires a routine to end by calling case_resolution.
 TOOLS = [
+    # Lookup. The eval answers with the string True and keeps going.
+    # The model is asked for booking_reference, full_name, and flight_number.
     {
         "type": "function",
         "function": {
@@ -25,6 +34,8 @@ TOOLS = [
             }
         }
     },
+    # Lookup. The eval speaks the prompt argument to the customer and keeps going.
+    # It does not send a tool result for this name.
     {
         "type": "function",
         "function": {
@@ -43,6 +54,7 @@ TOOLS = [
             }
         }
     },
+    # Lookup. The eval answers with the row's ticket type and fare rules, then continues.
     {
         "type": "function",
         "function": {
@@ -61,6 +73,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action. The eval stops and scores this name plus booking_reference.
     {
         "type": "function",
         "function": {
@@ -79,6 +92,8 @@ TOOLS = [
             }
         }
     },
+    # Lookup. The eval answers with the row's ticket type and fare rules, and continues.
+    # When the fare is partial_refund, that answer also includes the refund amount.
     {
         "type": "function",
         "function": {
@@ -97,6 +112,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and refund_amount.
     {
         "type": "function",
         "function": {
@@ -119,6 +136,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -137,6 +155,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -155,6 +174,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -173,6 +193,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # booking_reference is required. new_flight is described to the model and is not required.
     {
         "type": "function",
         "function": {
@@ -189,6 +211,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -204,6 +227,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -219,6 +243,7 @@ TOOLS = [
             }
         }
     },
+    # Lookup. The eval answers with a fixed next flight, FR9876 at 5:00 PM tomorrow, and continues.
     {
         "type": "function",
         "function": {
@@ -235,6 +260,7 @@ TOOLS = [
         }
     },
     # Functions related to rebooking
+    # Lookup. The eval answers with a fixed next flight, LMG091 at 10:00 AM tomorrow, and continues.
     {
         "type": "function",
         "function": {
@@ -250,6 +276,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. The model must send flight_details.
     {
         "type": "function",
         "function": {
@@ -265,6 +292,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -280,6 +308,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. The model must send interline_flight.
     {
         "type": "function",
         "function": {
@@ -296,6 +325,7 @@ TOOLS = [
         }
     },
     # Functions related to refunds and compensation
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -311,6 +341,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and original_payment_method.
     {
         "type": "function",
         "function": {
@@ -327,6 +359,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and bonus_percentage.
     {
         "type": "function",
         "function": {
@@ -343,6 +377,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -359,6 +394,8 @@ TOOLS = [
         }
     },
     # Functions for special circumstances
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and medical_certificate.
     {
         "type": "function",
         "function": {
@@ -375,6 +412,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and documentation.
     {
         "type": "function",
         "function": {
@@ -391,6 +430,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and bereavement_documentation.
     {
         "type": "function",
         "function": {
@@ -408,6 +449,7 @@ TOOLS = [
         }
     },
     # Functions for group bookings
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -423,6 +465,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -439,6 +482,7 @@ TOOLS = [
         }
     },
     # Functions for unaccompanied minors
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -454,6 +498,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -470,6 +515,7 @@ TOOLS = [
         }
     },
     # Functions for handling FAQs
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -485,6 +531,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -500,6 +547,8 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund.
+    # The model must send booking_reference and new_destination.
     {
         "type": "function",
         "function": {
@@ -516,6 +565,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -531,6 +581,7 @@ TOOLS = [
             }
         }
     },
+    # Graded final action, as with process_full_refund. Requires booking_reference.
     {
         "type": "function",
         "function": {
@@ -547,6 +598,8 @@ TOOLS = [
         }
     },
     # Final case resolution function
+    # The name a generated routine must end on.
+    # If the agent calls it, the eval grades booking_reference and resolution_details.
     {
         "type": "function",
         "function": {

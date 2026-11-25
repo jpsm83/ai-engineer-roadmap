@@ -1,33 +1,43 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 
-# Warning control
+# Drop library warnings so the printed plan and tool trace are the lesson.
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import OpenAI key
+# Load OPENAI_API_KEY from a local .env. OpenAI() below takes this value as api_key.
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
+# copy snapshots the starting world. json turns tool arguments and results into text.
 import copy
 import json
 from openai import OpenAI
 from rich import print
 
+# One client for the planner call and every executor turn.
 client = OpenAI(api_key=openai_api_key)
+# The planner is the reasoning model. The executor is the non-reasoning model.
+# create_chat_completion turns reasoning off only for that second name.
 NON_REASONING_MODEL = 'gpt-6-luna'
 REASONING_MODEL = 'gpt-5-nano'
 
+# chat.completions.create returns a completion. Extra kwargs (tools, parallel_tool_calls)
+# are forwarded so the executor can pass a tool list. The planner call passes none.
+# reasoning_effort "none" is sent only when the model is NON_REASONING_MODEL.
 def create_chat_completion(model, messages, **kwargs):
     request = {"model": model, "messages": messages, **kwargs}
     if model == NON_REASONING_MODEL:
         request["reasoning_effort"] = "none"
     return client.chat.completions.create(**request)
 
-# Initialize the message list
+# Running log of status lines, the plan, and each tool call. append_message prints as it appends.
 message_list = []
 
-# Define the initial context for the application
+# The simulated company the tools read and write.
+# One order wants 200 X200 hubs; inventory has 50. SUPP1001 stocks COMP_X200,
+# the part products['X200'] says each hub needs. SUPP1002 stocks a different part.
+# Shipping options exist only for Los Angeles, the order's destination.
 context = {
     'inventory': {
         'X200': 50  # We currently have 50 units of Smart Home Hub X200 in stock
@@ -92,10 +102,12 @@ context = {
     }
 }
 
-# Store the initial state of context
+# Snapshot of that world before any tool changes it. Nothing later in this file reads it back.
 initial_context = copy.deepcopy(context)
 
-# Prompt for the planning model
+# Instructions for the reasoning model. It writes a plan; it does not call tools.
+# Function names in the plan have to match TOOLS below, and the last step has to be
+# `instructions_complete` so the executor knows when to stop.
 reasoning_prompt = """
 You are a supply chain management assistant. The first input you will receive will be a complex task that needs to be carefully reasoned through to solve. 
 Your task is to review the challenge, and create a detailed plan to process customer orders, manage inventory, and handle logistics.
@@ -155,7 +167,9 @@ Use markdown format when generating the plan with each step and sub-step.
 Please find the scenario below.
 """
 
-# System prompt for the execution model
+# System prompt for the non-reasoning executor.
+# {policy} is a slot. call_non_reasoning_model fills it with the plan text.
+# The name inside the braces has to match the .replace("{policy}", plan) later.
 non_reasoning_prompt = """
 You are a helpful assistant responsible for executing the policy on handling incoming orders. Your task is to follow the policy exactly as it is written and perform the necessary actions.
 
@@ -173,6 +187,10 @@ POLICY:
 
 """
 
+# Schemas the executor model sees. It picks a name and fills the arguments; it does not run these.
+# The Python functions further down are what actually run, and function_mapping ties each
+# schema name to that function. instructions_complete has no parameters: the loop treats
+# that name as "stop" and does not look it up in function_mapping.
 TOOLS = [
     {
         "type": "function",
@@ -462,15 +480,20 @@ TOOLS = [
     }
 ]
 
-# Function Definitions
+# Local stand-ins for the supply-chain API. Each one reads or writes `context`
+# and returns a dict the executor sends back to the model as the tool result.
+
+# Quantity on hand for a product id, or 0 when that id is missing from inventory.
 def get_inventory_status(product_id):
     quantity = context['inventory'].get(product_id, 0)
     return {'product_id': product_id, 'quantity': quantity}
 
+# Name and components_needed for a product. Empty values when the id is unknown.
 def get_product_details(product_id):
     product = context['products'].get(product_id, {})
     return {"name": product.get('name', ''), "components_needed": product.get("components_needed", {})}
 
+# Adds quantity_change to inventory. A negative result is refused and the dict is left unchanged.
 def update_inventory(product_id, quantity_change):
     if product_id not in context['inventory']:
         return {'error': f"Product ID {product_id} not found in inventory."}
@@ -483,9 +506,12 @@ def update_inventory(product_id, quantity_change):
     context['inventory'][product_id] = new_quantity
     return {'product_id': product_id, 'new_quantity': new_quantity}
 
+# The first order only. This world has a single unprocessed order.
 def fetch_new_orders():
     return context['orders'][0]
 
+# How many units of product_id can cover this order.
+# Inventory itself changes only when update_inventory or an immediate production run writes it.
 def allocate_stock(order_id, product_id, quantity):
     available = context['inventory'].get(product_id, 0)
     allocated_quantity = min(available, quantity)
@@ -497,10 +523,12 @@ def allocate_stock(order_id, product_id, quantity):
         }
     return {'order_id': order_id, 'allocated_quantity': allocated_quantity}
 
+# The supplier ids this world can order from.
 def check_available_suppliers():
     available_suppliers = context['available_suppliers']
     return {"available_suppliers": available_suppliers}
 
+# Components that supplier stocks, and how many. An error dict when the id is unknown.
 def get_supplier_info(supplier_id):
     supplier = context['suppliers'].get(supplier_id)
     if not supplier:
@@ -509,6 +537,8 @@ def get_supplier_info(supplier_id):
     components = supplier.get('components', {})
     return {'supplier_id': supplier_id, 'components': components}
 
+# Takes quantity from that supplier's component and adds the same number
+# to next week's production capacity. Fails when the supplier does not stock that component.
 def place_purchase_order(supplier_id, component_id, quantity):
     supplier = context['suppliers'].get(supplier_id)
     if not supplier:
@@ -524,10 +554,13 @@ def place_purchase_order(supplier_id, component_id, quantity):
     
     return {'po_number': po_number, 'status': 'Placed'}
 
+# How many units that time_frame can still produce. time_frame is "immediate" or "next_week".
 def check_production_capacity(time_frame):
     capacity = context['production_capacity'].get(time_frame, 0)
     return {'time_frame': time_frame, 'available_capacity': capacity}
 
+# Reserves quantity against that time_frame.
+# An "immediate" run also adds the units to inventory. A "next_week" run only reduces capacity.
 def schedule_production_run(product_id, quantity, time_frame):
     capacity = context['production_capacity'].get(time_frame, 0)
     if capacity >= quantity:
@@ -538,20 +571,24 @@ def schedule_production_run(product_id, quantity, time_frame):
     else:
         return {'error': 'Insufficient production capacity, please order more from supplier.'}
 
+# Shipping choices stored under destination. An unknown destination returns an error.
 def calculate_shipping_options(destination, weight, dimensions):
     options = context['shipping_options'].get(destination)
     if not options:
         return {'error': f"No shipping options available for destination {destination}."}
     return options
 
+# A tracking number built from the order id, plus a booked status.
 def book_shipment(order_id, carrier_id, service_level):
     tracking_number = f'TRACK_{order_id}'
     return {'tracking_number': tracking_number, 'status': 'Booked'}
 
+# Reports that the message was sent. The text is not stored on the customer.
 def send_order_update(customer_id, order_id, message):
     return {'customer_id': customer_id, 'order_id': order_id, 'message_sent': True}
 
-# Map function names to actual functions
+# Schema name to function. instructions_complete is absent here:
+# the executor loop stops when it sees that name and never calls it.
 function_mapping = {
     'get_inventory_status': get_inventory_status,
     'get_product_details': get_product_details,
@@ -568,6 +605,8 @@ function_mapping = {
     'send_order_update': send_order_update
 }
 
+# One scenario: ask the reasoning model for a plan, then let the other model carry it out.
+# Returns the executor transcript (system policy, assistant turns, tool results).
 def process_scenario(scenario):
     append_message({'type': 'status', 'message': f'Generating plan with {REASONING_MODEL}...'})
 
@@ -583,6 +622,8 @@ def process_scenario(scenario):
 
     return messages
 
+# Append to message_list and print a short line for that type.
+# status, plan, and assistant print text. tool_call and tool_response print the name and payload.
 def append_message(message):
     message_list.append(message)
     message_type = message.get('type', '')
@@ -601,6 +642,8 @@ def append_message(message):
     else:
         print(message.get('content', ''))
 
+# One user message: the planner instructions plus this scenario.
+# Returns the plan as plain text from choices[0].message.content, not as tool calls.
 def call_reasoning_model(scenario):
     prompt = f"""
 {reasoning_prompt}
@@ -618,6 +661,12 @@ Please provide the next steps in your plan."""
     
     return plan
 
+# The tool loop the executor runs until it calls instructions_complete.
+# The system message is non_reasoning_prompt with {policy} replaced by the plan.
+# Each turn the model may answer in text or request one tool (parallel_tool_calls=False).
+# A tool call is parsed, run through function_mapping, and sent back as a tool message
+# whose tool_call_id is the id from the request. That is the shape the next turn expects.
+# With no tool call, the loop asks again with this assistant turn already in the history.
 def call_non_reasoning_model(plan):
     non_reasoning_model_policy_prompt = non_reasoning_prompt.replace("{policy}", plan)
     messages = [
@@ -637,10 +686,12 @@ def call_non_reasoning_model(plan):
 
         append_message({'type': 'assistant', 'content': assistant_message.get('content')})
 
+        # Stop signal named in the planner prompt. Not a function in function_mapping.
         if (response.choices[0].message.tool_calls and
             response.choices[0].message.tool_calls[0].function.name == 'instructions_complete'):
             break
 
+        # No tool requested. Ask again; the messages already include this assistant turn.
         if not response.choices[0].message.tool_calls:
             continue
 
@@ -651,6 +702,7 @@ def call_non_reasoning_model(plan):
 
             append_message({'type': 'tool_call', 'function_name': function_name, 'arguments': input_arguments_str})
 
+            # arguments is a JSON string. A bad payload skips this tool, so no result is sent back.
             try:
                 input_arguments = json.loads(input_arguments_str)
             except (ValueError, json.JSONDecodeError):
@@ -669,6 +721,7 @@ def call_non_reasoning_model(plan):
             except (TypeError, ValueError):
                 serialized_output = str(function_response)
 
+            # tool_call_id has to be the id on the request, or the next turn cannot match the result.
             messages.append({
                 "role": "tool",
                 "tool_call_id": tool_id,
@@ -679,7 +732,8 @@ def call_non_reasoning_model(plan):
 
     return messages
 
-# Example usage
+# The order this demo runs: 200 hubs to Los Angeles, ship what we can, buy parts for the rest,
+# and tell the customer before the plan ends.
 scenario_text = ("We just received a major shipment of new orders. "
                  "Please generate a plan that gets the list of awaiting "
                  "orders and determines the best policy to fulfill them.\n\n"
@@ -692,9 +746,10 @@ scenario_text = ("We just received a major shipment of new orders. "
                  "Prioritize getting any possible orders out that you can "
                  "while placing orders for any backlog items.")
 
-# Process the scenario
+# Plan, then execute. This calls the API. messages is the executor transcript.
 messages = process_scenario(scenario_text)
 
+# Print every turn except the system policy, which is the whole plan repeated.
 for x in messages:
     if x.get('role') == 'system':
         continue

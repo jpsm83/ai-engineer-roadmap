@@ -1,27 +1,32 @@
 import os
 from dotenv import load_dotenv, find_dotenv
 
-# Warning control
+# Drop library warnings so the printed rewrite is the lesson.
 import warnings
 warnings.filterwarnings('ignore')
 
-# Import OpenAI key
+# Load OPENAI_API_KEY from a local .env. OpenAI() below takes this value as api_key.
 _ = load_dotenv(find_dotenv())
 openai_api_key = os.getenv('OPENAI_API_KEY')
 
 from openai import OpenAI
 from rich import print
 
+# One client. The live call uses the non-reasoning model.
+# create_chat_completion turns reasoning off only for that name.
 client = OpenAI(api_key=openai_api_key)
 NON_REASONING_MODEL = 'gpt-6-luna'
 REASONING_MODEL = 'gpt-5-nano'
 
+# chat.completions.create returns a completion. Extra kwargs are accepted and unused in this file.
+# reasoning_effort "none" is sent only when the model is NON_REASONING_MODEL.
 def create_chat_completion(model, messages, **kwargs):
     request = {"model": model, "messages": messages, **kwargs}
     if model == NON_REASONING_MODEL:
         request["reasoning_effort"] = "none"
     return client.chat.completions.create(**request)
 
+# One user prompt in, the reply text out. That text is choices[0].message.content.
 def get_chat_completion(model, prompt):
     """
     Calls the OpenAI API to get a chat completion.
@@ -36,6 +41,10 @@ def get_chat_completion(model, prompt):
     )
     return response.choices[0].message.content
 
+# A React interview-form prompt stays in this unused string so it does not call the API.
+# Inside it, the non-reasoning call is commented out. The reasoning-model call would
+# print that model's reply. The prompt asks for code only: a component named
+# FeedbackForm that starts with "use client".
 '''
 react_demo_prompt = """Create an elegant, delightful React component for an Interview Feedback Form where:
 
@@ -64,7 +73,8 @@ reasoning_model_code = get_chat_completion(REASONING_MODEL, react_demo_prompt)
 print(reasoning_model_code)
 '''
 
-# Pre-generated code snippet with issues that need to be resolved.
+# A tangled process_orders, given to the model as source to clean.
+# The comments inside this string are part of the code the model sees.
 code_snippet = """
 def process_orders(orders_list, settings={}, debug=False, notify_customer=True):
     results = []
@@ -146,10 +156,13 @@ def process_orders(orders_list, settings={}, debug=False, notify_customer=True):
     }
 """
 
+# Ask the non-reasoning model for a rewrite, and print only that text.
 prompt = f"""I have some code that I'd like you to clean up and improve. Return only the updated code that fixes the issues: {code_snippet}"""
 non_reasoning_model_code = get_chat_completion(NON_REASONING_MODEL, prompt)
 print(non_reasoning_model_code)
 
+# The same rewrite on the reasoning model, then a third call that compares the two,
+# stay in this unused string so this run only shows the non-reasoning rewrite.
 '''
 reasoning_model_code = get_chat_completion(REASONING_MODEL, prompt)
 print(reasoning_model_code)
