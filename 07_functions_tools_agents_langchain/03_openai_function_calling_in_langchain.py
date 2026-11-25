@@ -13,8 +13,6 @@ llm_model = "gpt-5-nano"
 
 # A plain class stores whatever you pass. It does not check types.
 # The first object is a normal user. The print would show "Joe".
-# The second assignment replaces foo. age is the string "bar", and that is allowed.
-# The print would show that string.
 class User:
     def __init__(self, name: str, age: int, email: str):
         self.name = name
@@ -96,7 +94,7 @@ class WeatherSearch2(BaseModel):
 model = ChatOpenAI(model=llm_model)
 
 # bind_tools attaches weather_function. The invoke would return a message that
-# can request WeatherSearch for a San Francisco question. The result is discarded.
+# can request WeatherSearch for a San Francisco question.
 # model.bind_tools([weather_function]).invoke("what is the weather in SF today?")
 
 # Same binding, kept so the chain further down can use it.

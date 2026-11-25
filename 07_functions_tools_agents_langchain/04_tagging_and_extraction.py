@@ -143,7 +143,7 @@ class Overview(BaseModel):
     language: str = Field(description="Provide the language that the content is written in.")
     keywords: str = Field(description="Provide keywords related to the content.")
 
-# Overview's schema, in a list because bind_tools expects one.
+# Overview's schema, wrapped in a list because bind_tools expects a list.
 overview_tagging_function = [
     convert_to_openai_function(Overview)
 ]
@@ -212,7 +212,8 @@ extraction_chain = (prompt | extraction_model | JsonOutputKeyToolsParser(key_nam
 
 # print(extraction_chain.invoke({"input": "hi"}))
 
-# Splits text on character boundaries, with no overlap between chunks.
+# Splits on paragraphs, then lines, then spaces, and only then on characters.
+# chunk_overlap=0 means adjacent chunks do not share text.
 text_splitter = RecursiveCharacterTextSplitter(chunk_overlap=0)
 
 # Chunks of the full post, not the 10_000-character slice.

@@ -41,9 +41,10 @@ chain = prompt | model | output_parser
 
 # print(chain.invoke({"topic": "bears"}))
 
-# Two short texts, embedded and stored in memory. The retriever returns the
-# closest of those texts for a question. The prints would show one sentence
-# each: where Harrison worked, and what bears eat.
+# Two short texts, embedded and stored in memory. as_retriever() searches
+# that store. invoke returns a list of documents, closest first. With two
+# texts stored, both can come back. The prints would show that list for
+# each question: where Harrison worked, and what bears eat.
 vectorstore = InMemoryVectorStore.from_texts(
     ["harrison worked at kensho", "bears like to eat honey"],
     embedding=OpenAIEmbeddings(model="text-embedding-3-small"),
@@ -70,14 +71,15 @@ prompt = ChatPromptTemplate.from_template(template)
 # "context" then retrieves documents and format_docs joins them into a string.
 # "question" passes the same string through, so the template can fill {question}.
 # Those keys have to match the placeholders above.
-# The commented lambdas are the same two pulls, written as functions.
+# The commented context lambda stops at the retriever and returns documents.
+# The live context branch also runs format_docs, so the prompt receives a string.
+# The question lambda and itemgetter("question") both pass the question through.
 # | prompt | model | output_parser is the joke chain's shape: fill the prompt,
 # call the model, return the text. The print would show the Harrison answer.
 chain = RunnableParallel({
-    # itemgetter("question") pulls that string out of the input dict.
     "context": itemgetter("question") | retriever | format_docs,
     "question": itemgetter("question"),
-    # The lambdas below are the same two pulls, written as functions.
+    # The context lambda returns documents and does not join them.
     # "context": lambda x: retriever.get_relevant_documents(x["question"]),
     # "question": lambda x: x["question"]
 }) | prompt | model | output_parser
@@ -89,7 +91,7 @@ chain = RunnableParallel({
 inputs = RunnableParallel({
     "context": itemgetter("question") | retriever | format_docs,
     "question": itemgetter("question"),
-    # Same unused lambda alternative as in the chain above.
+    # Same unused lambdas as in the chain above. The context one returns documents.
     # "context": lambda x: retriever.get_relevant_documents(x["question"]),
     # "question": lambda x: x["question"]
 })
@@ -223,7 +225,7 @@ chain = prompt | model | output_parser
 # invoke runs one bears joke. The return value is unused.
 chain.invoke({"topic": "bears"})
 
-# batch runs the two topic dicts in one call. That return value is unused too.
+# batch runs each topic dict on its own. That return value is unused too.
 chain.batch([{"topic": "bears"}, {"topic": "frogs"}])
 
 # stream yields pieces of the bears joke as they are produced. Each piece is printed.

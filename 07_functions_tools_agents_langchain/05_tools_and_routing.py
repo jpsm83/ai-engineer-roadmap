@@ -109,7 +109,7 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
 # print(get_current_temperature.invoke({"latitude": 13, "longitude": 14}))
 
 # No args_schema: LangChain infers one string argument, query, from the signature.
-# The docstring tells the model this tool is for general knowledge.
+# The docstring is the description the model sees: search Wikipedia and return summaries.
 @tool
 def search_wikipedia(query: str) -> str:
     """Run Wikipedia search and get page summaries."""

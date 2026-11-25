@@ -61,9 +61,9 @@ messages = [
     }
 ]
 
-# The block below is a string, so none of it runs. It walks the same tools
-# through tool_choice, and the prints would show the completion, the assistant
-# message, its text, any tool call, the parsed arguments, and the dummy JSON:
+# The block below is a string, so none of it runs. It walks tool_choice.
+# Only the first call prints the message, the tool call, the arguments, and
+# the dummy JSON. Every call prints the completion:
 #   - tool_choice omitted: the model decides
 #   - "hi!" with tools available: the model can answer in text and skip the tool
 #   - "auto": the same decision as omitting tool_choice
