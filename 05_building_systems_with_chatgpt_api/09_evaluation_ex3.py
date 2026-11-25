@@ -4,10 +4,14 @@ from openai import OpenAI
 import utils
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for the rubric call in the unused block and for eval_vs_ideal.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Chat call those checks share. messages in, assistant text out.
+# max_completion_tokens also counts reasoning tokens on gpt-5-nano.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -21,6 +25,11 @@ def get_completion_from_messages(messages,
     return response.choices[0].message.content
 
 # Run through the end-to-end system to answer the user query
+# Four utils calls. get_products_from_query returns the model's
+# extraction text. read_string_to_list turns that text into a list of
+# dicts. get_mentioned_product_info looks those names up and returns
+# catalog dicts. answer_user_msg sends the question plus that product
+# info and returns the assistant reply. assistant_answer is that reply.
 
 customer_msg = f"""
 tell me about the smartx pro phone and the fotosnap camera, the dslr one.
@@ -31,6 +40,10 @@ category_and_product_list = utils.read_string_to_list(products_by_category)
 product_info = utils.get_mentioned_product_info(category_and_product_list)
 assistant_answer = utils.answer_user_msg(user_msg=customer_msg, product_info=product_info)
 
+# Unused rubric. It would ask a model, given the question, the product
+# context, and the reply, whether the reply stays inside that context
+# and whether each part of the question was addressed. The print of
+# assistant_answer stays in this string too.
 '''
 print(assistant_answer)
 
@@ -95,6 +108,8 @@ print(evaluation_output)
 '''
 
 # Evaluate the LLM's answer to the user based on an "ideal" / "expert" (human generated) answer.
+# Hand-written reply for the same question. eval_vs_ideal compares a
+# model reply to this text. customer_msg here matches the query above.
 
 test_set_ideal = {
     'customer_msg': """\
@@ -148,6 +163,10 @@ Or may do you have other questions I can help you with?
 }
 
 # Check if the LLM's response agrees with or disagrees with the expert answer
+# The model sees the question, the expert answer, and the submission,
+# and must return one letter: A subset, B superset, C the same details,
+# D a disagreement, or E differences that do not matter for the facts.
+# What runs is the chat call. The caller receives that letter.
 
 def eval_vs_ideal(test_set, assistant_answer):
 
@@ -193,6 +212,9 @@ Compare the factual content of the submitted answer with the expert answer. Igno
 
 # print(assistant_answer)
 
+# First print scores assistant_answer from the chain above.
+# assistant_answer_2 is a sentence that cites nothing, so the second
+# print is the disagreement case.
 print(eval_vs_ideal(test_set_ideal, assistant_answer))
 
 assistant_answer_2 = "life is like a box of chocolates"

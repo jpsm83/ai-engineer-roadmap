@@ -4,11 +4,18 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
+# One user string in, the assistant's reply text out.
+# The string is wrapped as a single user message. create() returns a
+# completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -18,6 +25,11 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Same call, but messages is already a list of {"role", "content"} dicts,
+# so a system turn can sit in front of the user turn.
+# temperature and max_completion_tokens are forwarded. On gpt-5-nano the
+# token cap also counts reasoning tokens, not just the visible reply.
+# Returns only the assistant text.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -30,6 +42,10 @@ def get_completion_from_messages(messages,
     )
     return response.choices[0].message.content
 
+# Same chat call as get_completion_from_messages, plus the usage counts.
+# content is the assistant text. token_dict holds prompt_tokens,
+# completion_tokens, and total_tokens from response.usage.
+# The live demo prints both, so the reply and its size show up together.
 def get_completion_and_token_count(messages,
                                    model="gpt-5-nano",
                                    temperature=1,
@@ -52,6 +68,11 @@ def get_completion_and_token_count(messages,
 
     return content, token_dict
 
+# Earlier demos stay in one unused string so they do not call the API.
+# In order: capital of France; reverse "lollipop" as a word, then as
+# hyphenated letters (splitting the letters changes the token task); a system
+# turn that asks for Dr Seuss; one that forces a single sentence; both
+# instructions in one system turn.
 '''
 # Prompt the model and get a completion
 
@@ -114,6 +135,9 @@ response = get_completion_from_messages(messages, temperature=1)
 print(response)
 '''
 
+# Live call. The system turn sets the Dr Seuss voice; the user turn asks
+# for a short poem. get_completion_and_token_count returns the poem and
+# the three usage counts, and the two prints show them.
 messages = [
 {'role':'system',
  'content':"""You are an assistant who responds\

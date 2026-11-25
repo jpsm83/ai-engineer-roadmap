@@ -4,10 +4,14 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for both chat calls in this file: extraction, then the answer.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Chat helper shared by those two calls. messages in, assistant text out.
+# max_completion_tokens also counts reasoning tokens on gpt-5-nano.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -20,9 +24,14 @@ def get_completion_from_messages(messages,
     )
     return response.choices[0].message.content
 
+# #### wraps the customer query in the user message. The extraction
+# prompt tells the model to look for that same delimiter.
 delimiter = "####"
 
 # Extract relevant product and category names
+# The model should return a Python list of objects, each with either a
+# category or a products list, and only names from the allowed list.
+# Nothing is looked up in this call. The functions below do that.
 
 system_message = f"""
 You will be provided with customer service queries. \
@@ -93,6 +102,9 @@ FotoSnap Instant Camera
 Only output the list of objects, with nothing else.
 """
 
+# First query names two products and "tvs". The user content wraps it
+# in ####. category_and_product_response_1 is the model's text, not a
+# parsed list yet.
 user_message_1 = f"""
  tell me about the smartx pro phone and \
  the fotosnap camera, the dslr one. \
@@ -107,6 +119,9 @@ messages =  [
 
 category_and_product_response_1 = get_completion_from_messages(messages)
 
+# Unused second query: a router, which is not in the catalog, so the
+# list should come back empty. The print of the first response stays
+# in this string too. Left unused so it does not call the API.
 '''
 print(category_and_product_response_1)
 
@@ -128,6 +143,8 @@ print(response)
 # Retrieve detailed product information for extracted products and categories
 
 # product information
+# Local catalog the lookup functions read. Keys are product names.
+# This is the source of truth. The extraction prompt only listed names.
 products = {
     "TechPro Ultrabook": {
         "name": "TechPro Ultrabook",
@@ -465,12 +482,16 @@ products = {
     }
 }
 
+# Name to one product dict, or None if that name is not a key.
 def get_product_by_name(name):
     return products.get(name, None)
 
+# Every product whose "category" field equals this string.
 def get_products_by_category(category):
     return [product for product in products.values() if product["category"] == category]
 
+# Inspection prints: one product, one category, the original query,
+# and the raw extraction text. Left commented.
 # print(get_product_by_name("TechPro Ultrabook"))
 
 # print(get_products_by_category("Computers and Laptops"))
@@ -480,6 +501,11 @@ def get_products_by_category(category):
 # print(category_and_product_response_1)
 
 # Read Python string into Python list of dictionaries
+# The model returned text that looks like a Python list. Swapping
+# single quotes for double quotes lets json.loads parse it. None if
+# the text is missing or is not JSON. category_and_product_list is
+# that list of dicts. generate_output_string reads it next.
+# The commented print would show the parsed list.
 
 def read_string_to_list(input_string):
     if input_string is None:
@@ -498,6 +524,11 @@ category_and_product_list = read_string_to_list(category_and_product_response_1)
 # print(category_and_product_list)
 
 # Retrieve detailed product information for the relevant products and categories
+# Walk the parsed list. A "products" object is looked up by name.
+# A "category" object expands to every product in that category.
+# Each hit is appended as JSON text. Unknown names are printed and skipped.
+# product_information_for_user_message_1 is that text. The commented
+# print would show it before it is pasted into the answer prompt.
 
 def generate_output_string(data_list):
     output_string = ""
@@ -532,6 +563,10 @@ product_information_for_user_message_1 = generate_output_string(category_and_pro
 # print(product_information_for_user_message_1)
 
 # Generate answer to user query based on detailed product information
+# This second system_message replaces the extraction instructions with
+# the store-assistant voice. user_message_1 is assigned again with the
+# same question, so the answer step does not reuse the delimited
+# extraction query.
 
 system_message = f"""
 You are a customer service assistant for a \
@@ -545,6 +580,10 @@ tell me about the smartx pro phone and \
 the fotosnap camera, the dslr one. \
 Also tell me about your tvs"""
 
+# The transcript is the question, then an assistant turn that already
+# holds the catalog JSON. The model continues from that, as if it had
+# just recalled the products. final_response is the customer-facing
+# reply, and the print shows it.
 messages =  [  
 {'role':'system',
  'content': system_message},   

@@ -4,10 +4,15 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for the chat call in get_completion_from_messages.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Chat call. messages is a list of {"role", "content"} dicts.
+# create() returns a completion; this hands back only the assistant text.
+# max_completion_tokens also counts reasoning tokens on gpt-5-nano.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -21,6 +26,10 @@ def get_completion_from_messages(messages,
     return response.choices[0].message.content
 
 # Classify customer queries to handle different cases
+# The model must return JSON with keys primary and secondary, chosen from
+# the lists in the system text. delimiter is ####. The user message wraps
+# the query in that same string, so the model can see where the query
+# starts and ends. Those two spellings have to match.
 
 delimiter = "####"
 system_message = f"""
@@ -60,6 +69,8 @@ Speak to a human
 
 """
 
+# Unused query: deleting a profile would be Account Management / Close
+# account. Left in this string so it does not call the API.
 '''
 user_message = f"""\
 I want you to delete my profile and all of my user data"""
@@ -75,6 +86,9 @@ response = get_completion_from_messages(messages)
 print(response)
 '''
 
+# Live query. A question about flat screen TVs should land in
+# General Inquiry / Product information. The user content is that query
+# wrapped in ####, matching delimiter in the system message.
 user_message = f"""\
 Tell me more about your flat screen tvs"""
 messages =  [  

@@ -5,10 +5,14 @@ import utils
 import json
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for the extraction calls inside the two finder functions.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Chat call those finders share. messages in, assistant text out.
+# max_completion_tokens also counts reasoning tokens on gpt-5-nano.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -21,10 +25,19 @@ def get_completion_from_messages(messages,
     )
     return response.choices[0].message.content
 
+# Catalog pasted into the prompts below: category name to a list of
+# product names, from utils. The bare name on the next line is how a
+# notebook shows that dict. A script does not print it.
 products_and_category = utils.get_products_and_category()
 products_and_category
 
 # Find relevant product and category names (version 1)
+# The model must return a list of JSON objects, each with a category
+# and a products list, using only this catalog. The one few-shot pair
+# is "most expensive computer" answered with every computer, because
+# the instructions say not to infer price from the name.
+# Returns the assistant text. The model sees the catalog; nothing in
+# the catalog runs.
 
 def find_category_and_product_v1(user_input,products_and_category):
 
@@ -70,6 +83,9 @@ def find_category_and_product_v1(user_input,products_and_category):
     ] 
     return get_completion_from_messages(messages)
 
+# Examples 0–3 stay unused: a budget TV, a phone charger, "what
+# computers do you have?", and the phone plus camera plus TVs query.
+# Left in this string so they do not call the API.
 '''
 # Evaluate on some queries
 
@@ -110,6 +126,8 @@ print(f"products_by_category_3: {products_by_category_3}")
 '''
 
 # Harder test cases
+# Example 4 does run on version 1: two named products and a
+# budget-computers question. The print shows the model's text.
 
 # ================================ example 4 ================================
 customer_msg_4 = f"""
@@ -121,6 +139,11 @@ products_by_category_4 = find_category_and_product_v1(customer_msg_4,
 print(f"products_by_category_4: {products_by_category_4}")
 
 # Modify the prompt to work on the hard test cases
+# Version 2 is a second function. Version 1 stays, and example 4 above
+# still calls it. The docstring records what version 2 adds: JSON only,
+# and a second few-shot ("cheapest computer") that again lists every
+# computer and nothing else. The message list is the system text, those
+# two user/assistant pairs, then the real query.
 
 def find_category_and_product_v2(user_input,products_and_category):
     """
@@ -182,6 +205,8 @@ def find_category_and_product_v2(user_input,products_and_category):
     return get_completion_from_messages(messages)
 
 # Evaluate the modified prompt on the hard tests cases
+# The phone, camera, and TV query (example 3) run through version 2.
+# The print shows that text.
 
 # ================================ example 3 v2 ================================
 
@@ -194,6 +219,8 @@ products_by_category_3 = find_category_and_product_v2(customer_msg_3,
 print(f"products_by_category_3: {products_by_category_3}")
 
 # Regression testing: verify that the model still works on previous test cases
+# The budget-TV query (example 0) through version 2. The same query's
+# version 1 call sits in the unused string above and does not run.
 
 customer_msg_0 = f"""Which TV can I buy if I'm on a budget?"""
 
@@ -202,6 +229,10 @@ products_by_category_0 = find_category_and_product_v2(customer_msg_0,
 print(products_by_category_0)
 
 # Gather development set for automated testing
+# Each item is a customer_msg and the ideal_answer the scorer compares
+# against: a dict of category to a set of product names, or [] when
+# nothing in the catalog should match (the hot tub). Example 7's own
+# comment notes the model may return only a subset of that ideal set.
 
 msg_ideal_pairs_set = [
     
@@ -299,6 +330,13 @@ I'm on a budget, what computers do you have?""",
 ]
 
 # Evaluate test cases by comparing to the ideal answers
+# Score one reply against one ideal answer. Returns a fraction from
+# 0 to 1. Both empty is a full match. One side empty and the other not
+# is a miss. Otherwise each object's products are compared as a set to
+# ideal[category]. An equal set counts. A subset or superset is printed
+# and does not count. A category the ideal answer does not have is
+# skipped. The fraction is matches divided by how many objects the
+# model returned, so one example can be partial.
 
 def eval_response_with_ideal(response,
                               ideal,
@@ -368,6 +406,10 @@ def eval_response_with_ideal(response,
         
     return pc_correct
 
+# One worked example before the full loop: index 7, the racing-games
+# question. Prints the customer message, the ideal set, and the model's
+# text. The score call's fraction is not printed. A mismatch inside
+# the scorer prints on its own.
 print(f'Customer message: {msg_ideal_pairs_set[7]["customer_msg"]}')
 print(f'Ideal answer: {msg_ideal_pairs_set[7]["ideal_answer"]}')
 
@@ -379,6 +421,11 @@ eval_response_with_ideal(response,
                               msg_ideal_pairs_set[7]["ideal_answer"])
 
 # Run evaluation on all test cases and calculate the fraction of cases that are correct
+# Version 2 on every pair. Each score is that example's fraction, and
+# fraction_correct is the average of those fractions. A timeout on any
+# call stops the loop, as the note below says. The commented prints
+# would show the question and the ideal set. The last of them names
+# products_by_category, which this loop never assigns.
 
 # Note, this will not work if any of the api calls time out
 score_accum = 0

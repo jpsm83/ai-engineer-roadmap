@@ -7,12 +7,22 @@ from dotenv import find_dotenv, load_dotenv
 from openai import OpenAI
 from rich import print
 
+# Shared helper for the evaluation lessons (07, 08, and 09).
+# They import these functions instead of keeping the catalog and the
+# prompts in each file. Nothing here runs on import except loading the
+# key and building the client.
+# Load OPENAI_API_KEY. The chat functions below send it on each request.
 _ = load_dotenv(find_dotenv())
 
+# Client those chat functions use on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# products.json sits next to this file. get_products reads it.
 PRODUCTS_FILE = Path(__file__).with_name("products.json")
 
 
+# The one chat call the model-using functions share.
+# The model sees the messages list. What runs is chat.completions.create.
+# The importer receives the assistant text only.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -26,11 +36,15 @@ def get_completion_from_messages(messages,
     return response.choices[0].message.content
 
 
+# Importer receives the catalog: product name to product fields,
+# loaded from products.json.
 def get_products():
     with open(PRODUCTS_FILE, "r") as file:
         return json.load(file)
 
 
+# Importer receives category name to a list of product names, built from
+# get_products so a prompt can list what may be mentioned.
 def get_products_and_category():
     products_by_category = defaultdict(list)
     for product_info in get_products().values():
@@ -41,14 +55,20 @@ def get_products_and_category():
     return dict(products_by_category)
 
 
+# Importer receives one product dict, or None if the name is missing.
 def get_product_by_name(name):
     return get_products().get(name)
 
 
+# Importer receives the list of product dicts in this category.
 def get_products_by_category(category):
     return [product for product in get_products().values() if product["category"] == category]
 
 
+# Model sees the catalog JSON and the query wrapped in ####.
+# Nothing in the catalog is executed; the model only reads those names.
+# Importer receives the assistant text, meant to be a list of objects
+# with either a category or a products list.
 def find_category_and_product_only(user_input, products_and_category):
     delimiter = "####"
     system_message = f"""
@@ -84,6 +104,10 @@ Only output the list of objects, with nothing else.
     return get_completion_from_messages(messages)
 
 
+# No model call. Importer receives a Python list parsed from the
+# extraction text, or None if it is missing or not JSON.
+# A ``` fence is stripped, then single quotes are swapped for double
+# quotes, because that text often looks like Python rather than JSON.
 def read_string_to_list(input_string):
     if input_string is None:
         return None
@@ -102,6 +126,8 @@ def read_string_to_list(input_string):
         return None
 
 
+# No model call. Importer receives one string of catalog JSON: the
+# named products, or every product in a named category.
 def generate_output_string(data_list):
     output_string = ""
 
@@ -128,11 +154,15 @@ def generate_output_string(data_list):
     return output_string
 
 
+# Same extraction text as find_category_and_product_only, using the
+# catalog from this file. Importer receives that text.
 def get_products_from_query(user_msg):
     """Extract mentioned categories and products from a customer query."""
     return find_category_and_product_only(user_msg, get_products_and_category())
 
 
+# Same lookup as generate_output_string, but the importer receives a
+# list of product dicts instead of one JSON string.
 def get_mentioned_product_info(data_list):
     """Look up catalog details for extracted products and categories."""
     product_info = []
@@ -159,6 +189,9 @@ def get_mentioned_product_info(data_list):
     return product_info
 
 
+# Model sees a store-assistant system turn, the question wrapped in
+# ####, and an assistant turn that already contains product_info.
+# What runs is the chat call. Importer receives the reply text.
 def answer_user_msg(user_msg, product_info):
     """Answer a customer query using retrieved product information."""
     delimiter = "####"

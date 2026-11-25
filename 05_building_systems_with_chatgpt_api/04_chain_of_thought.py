@@ -4,10 +4,14 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for the chat call in get_completion_from_messages.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Chat call. messages in, assistant text out.
+# max_completion_tokens also counts reasoning tokens on gpt-5-nano.
 def get_completion_from_messages(messages,
                                  model="gpt-5-nano",
                                  temperature=1,
@@ -20,9 +24,17 @@ def get_completion_from_messages(messages,
     )
     return response.choices[0].message.content
 
+# #### separates the reasoning steps in the system text, and the user
+# message wraps the query in the same characters. The split at the
+# bottom depends on that spelling.
 delimiter = "####"
 
 # Chain-of-Thought Prompting¶
+# The model must walk five steps: is this a specific product, is it one
+# of the five laptops listed, what the customer assumed, whether that
+# assumption is true, then the customer-facing reply. Each step is
+# separated by ####. The reply the customer should see is the piece
+# after the last delimiter.
 
 system_message = f"""
 Follow these steps to answer the customer queries.
@@ -114,6 +126,9 @@ Response to user:{delimiter} <response to customer>
 Make sure to include {delimiter} to separate every step.
 """
 
+# Unused query: how much more the BlueWave Chromebook costs than the
+# TechPro Desktop. That needs the assumption steps. Left in this string
+# so it does not call the API.
 '''
 user_message = f"""
 by how much is the BlueWave Chromebook more expensive \
@@ -131,6 +146,9 @@ response = get_completion_from_messages(messages)
 print(response)
 
 '''
+# Live query: "do you sell tvs". The catalog is only the five laptops,
+# so the product check should fail. response is the full reply, steps
+# included. The print of that full reply stays commented.
 user_message = f"""
 do you sell tvs"""
 
@@ -146,6 +164,12 @@ response = get_completion_from_messages(messages)
 # print(response)
 
 # Inner Monologue
+# The customer should not see the reasoning. split on #### and keep the
+# last piece, which the format puts after "Response to user". A reply
+# with no delimiter does not raise; the last piece is the whole reply.
+# The except branch runs when response has no split, typically None,
+# and then substitutes an apology.
+# final_response is the customer-facing piece, and the print shows it.
 
 try:
     final_response = response.split(delimiter)[-1].strip()
