@@ -1,15 +1,61 @@
 import os
 import warnings
+import datetime
 from langchain_openai import ChatOpenAI
 from langchain_classic.chains import ConversationChain
-from langchain_classic.memory import ConversationBufferMemory
-from dotenv import load_dotenv, find_dotenv
+from langchain_classic.base_memory import BaseMemory
+from langchain_classic.memory.utils import get_prompt_input_key
 from langchain_classic.memory import ConversationTokenBufferMemory
 from langchain_classic.memory import ConversationBufferWindowMemory
 from langchain_classic.memory import ConversationSummaryBufferMemory
-# account for deprecation of LLM model
-import datetime
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, get_buffer_string
+from dotenv import load_dotenv, find_dotenv
+from pydantic import Field
 
+# Same job as the deprecated langchain ConversationBufferMemory:
+# keep every turn and hand it back to ConversationChain as "history".
+class ConversationBufferMemory(BaseMemory):
+    return_messages: bool = False
+    memory_key: str = "history"
+    human_prefix: str = "Human"
+    ai_prefix: str = "AI"
+    messages: list[BaseMessage] = Field(default_factory=list)
+
+    @property
+    def memory_variables(self) -> list[str]:
+        return [self.memory_key]
+
+    @property
+    def buffer(self) -> str | list[BaseMessage]:
+        if self.return_messages:
+            return self.messages
+        return get_buffer_string(
+            self.messages,
+            human_prefix=self.human_prefix,
+            ai_prefix=self.ai_prefix,
+        )
+
+    def load_memory_variables(self, inputs: dict) -> dict:
+        return {self.memory_key: self.buffer}
+
+    def save_context(self, inputs: dict, outputs: dict) -> None:
+        input_key = get_prompt_input_key(inputs, self.memory_variables)
+        if len(outputs) == 1:
+            output_key = next(iter(outputs.keys()))
+        elif "output" in outputs:
+            output_key = "output"
+        else:
+            raise ValueError(
+                f"Got multiple output keys: {list(outputs.keys())}, cannot "
+                "determine which to store in memory."
+            )
+        self.messages.append(HumanMessage(content=inputs[input_key]))
+        self.messages.append(AIMessage(content=outputs[output_key]))
+
+    def clear(self) -> None:
+        self.messages = []
+
+# account for deprecation of LLM model
 _ = load_dotenv(find_dotenv()) # read local .env file
 
 warnings.filterwarnings('ignore')
