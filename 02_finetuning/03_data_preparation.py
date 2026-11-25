@@ -128,8 +128,8 @@ def build_finetuning_dataset(examples):
 
 def show_tokenizing_one_example(tokenizer, finetuning_dataset):
     ## Concatenate prompt and answer, then tokenize them as one sequence.
-    # return_tensors="np" makes input_ids a numpy array, so shape[1] on the
-    # next line is the token count for this one example.
+    # return_tensors="np" makes input_ids a numpy array. After the print,
+    # shape[1] is the token count for this one example.
     text = finetuning_dataset[0]["question"] + finetuning_dataset[0]["answer"]
     tokenized_inputs = tokenizer(text, return_tensors="np", padding=True)
     pprint(tokenized_inputs["input_ids"])

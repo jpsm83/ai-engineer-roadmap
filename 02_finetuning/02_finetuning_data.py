@@ -56,8 +56,8 @@ print("First question + answer:", text)
 
 ## Datasets from different sources use different column names. This block
 ## detects the convention and concatenates the first example accordingly.
-# The joined string is assigned and never read again. The template below is
-# what the training rows are built from.
+# This assignment replaces the printed text above. The new string is never
+# read. The template below is what the training rows are built from.
 if "question" in examples and "answer" in examples:
     text = examples["question"][0] + examples["answer"][0]
 elif "instruction" in examples and "response" in examples:
@@ -94,6 +94,8 @@ num_examples = len(examples["question"])
 finetuning_dataset_text_only = []
 finetuning_dataset_question_answer = []
 for i in range(num_examples):
+    # These names replace the first-row question and answer used in the
+    # template demo above. Each pass is one training row.
     question = examples["question"][i]
     answer = examples["answer"][i]
 

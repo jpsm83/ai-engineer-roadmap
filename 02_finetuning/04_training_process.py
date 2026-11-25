@@ -159,8 +159,8 @@ def tokenize_and_split_data(training_config, tokenizer):
 def inference(text, model, tokenizer, max_input_tokens=1000, max_output_tokens=100):
     """Generate an answer with a model and strip the prompt from the output."""
     ## Tokenize: turn the prompt text into model input IDs.
-    # return_tensors="pt" makes those ids a PyTorch tensor so the next
-    # line can move them onto the model's device.
+    # return_tensors="pt" makes those ids a PyTorch tensor. generate()
+    # below moves that tensor onto the model's device.
     input_ids = tokenizer.encode(
         text,
         return_tensors="pt",
@@ -266,6 +266,9 @@ class Trainer(HFTrainer):
         else:
             self.accelerator.backward(loss)
 
+        # The training loop logs this tensor. Dividing by
+        # gradient_accumulation_steps keeps the number on the scale of one
+        # mini-batch when several batches form one optimizer step.
         return loss.detach() / self.args.gradient_accumulation_steps
 
     def log(self, logs):
@@ -524,6 +527,7 @@ def run_lamini_examples(test_question):
     bigger_finetuned_model = BasicModelRunner(
         model_name_to_id["bigger_model_name"]
     )
+    # Calling the runner returns the completion text for test_question.
     bigger_finetuned_output = bigger_finetuned_model(test_question)
     print("Bigger (2.8B) finetuned model (test): ", bigger_finetuned_output)
 
@@ -542,6 +546,8 @@ def run_lamini_examples(test_question):
     model.train(is_public=True)
 
     ## Evaluate the trained model against the base model.
+    # evaluate() returns a dict. The loop reads eval_results, one entry per
+    # scored prompt.
     out = model.evaluate()
 
     lofd = []
