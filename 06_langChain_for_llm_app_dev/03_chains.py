@@ -13,32 +13,40 @@ from langchain_classic.chains.router.llm_router import LLMRouterChain, RouterOut
 from rich import print
 
 from dotenv import load_dotenv, find_dotenv
+# Load the API key ChatOpenAI reads, and silence warnings from the older chain classes.
 _ = load_dotenv(find_dotenv()) # read local .env file
 
 warnings.filterwarnings('ignore')
 
-# Get the current date
+# After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
 current_date = datetime.datetime.now().date()
-
-# Define the date after which the model should be set to "gpt-3.5-turbo"
 target_date = datetime.date(2024, 6, 12)
-
-# Set the model variable based on the current date
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
     llm_model = "gpt-6-luna"
 
+# Product reviews. The sequential-chain demo inside the unused string reads df.Review[5].
+# head() returns the first rows, and nothing prints them.
+# The router chain that runs at the bottom does not use this table.
 df = pd.read_csv('Data.csv')
 
 df.head()
 
+# Chat model for every chain in this file. temperature=1 is the value this call sends.
 llm = ChatOpenAI(temperature=1, model=llm_model)
 
+# The product name the naming chains inside the unused string would describe.
 product = "Queen Size Sheet Set"
 
-# LLMChain
-
+# Unused string, so none of these chains run. In order:
+# LLMChain: one prompt, a company name for a maker of {product}, then chain.run(product).
+# SimpleSequentialChain: chain_one names the company, chain_two writes 20 words from {company_name}.
+# That chain passes the first chain's text straight through as the only input of the next.
+# SequentialChain: four named steps on one review. Each output_key is the slot the next prompt fills
+# by the same name: English_Review, summary, language, then followup_message.
+# input_variables is Review. language is computed and used, and it is left out of output_variables.
+# overall_chain is called on df.Review[5]. A second ChatOpenAI inside this string would replace llm.
 '''
 prompt = ChatPromptTemplate.from_template(
     "What is the best name to describe \
@@ -134,8 +142,8 @@ review = df.Review[5]
 print(overall_chain(review))
 
 '''
-# Router Chain
-
+# The router is the chain this file actually runs.
+# Four destination prompts, each with an {input} slot. The persona is what that chain's model sees.
 physics_template = """You are a very smart physics professor. \
 You are great at answering questions about physics in a concise\
 and easy to understand manner. \
@@ -182,6 +190,8 @@ time complexity and space complexity.
 Here is a question:
 {input}"""
 
+# name is the string the router must return. description is the menu line the router reads.
+# "History" is capitalized. The other names are not. The template is the persona prompt above.
 prompt_infos = [
     {
         "name": "physics", 
@@ -206,6 +216,8 @@ prompt_infos = [
 ]
 
 
+# One LLMChain per destination, stored under the name the router will choose.
+# Nothing runs here. MultiPromptChain calls the chosen chain later.
 destination_chains = {}
 for p_info in prompt_infos:
     name = p_info["name"]
@@ -214,12 +226,18 @@ for p_info in prompt_infos:
     chain = LLMChain(llm=llm, prompt=prompt)
     destination_chains[name] = chain  
     
+# The menu the router prompt will read: "name: description", one destination per line.
 destinations = [f"{p['name']}: {p['description']}" for p in prompt_infos]
 destinations_str = "\n".join(destinations)
 
+# Fallback for destination DEFAULT. The prompt is only {input}, so this chain has no persona.
 default_prompt = ChatPromptTemplate.from_template("{input}")
 default_chain = LLMChain(llm=llm, prompt=default_prompt)
 
+# Instructions for the router model. .format below fills {destinations}.
+# {{input}} stays as the literal slot {input}, which PromptTemplate fills on each question.
+# The model is told to return JSON with destination and next_inputs.
+# destination has to be one of the names above, or DEFAULT.
 MULTI_PROMPT_ROUTER_TEMPLATE = """Given a raw text input to a \
 language model select the model prompt best suited for the input. \
 You will be given the names of the available prompts and a \
@@ -252,6 +270,8 @@ if you don't think any modifications are needed.
 
 << OUTPUT (remember to include the ```json)>>"""
 
+# Fill the menu now. input is still open. RouterOutputParser turns the model's JSON
+# into the destination name and the text the chosen chain receives.
 router_template = MULTI_PROMPT_ROUTER_TEMPLATE.format(
     destinations=destinations_str
 )
@@ -261,13 +281,19 @@ router_prompt = PromptTemplate(
     output_parser=RouterOutputParser(),
 )
 
+# Runs the router prompt on the question and returns the parsed route.
 router_chain = LLMRouterChain.from_llm(llm, router_prompt)
 
+# Asks the router, then runs that destination chain, or default_chain when the route is DEFAULT.
+# verbose=True prints which destination was chosen.
 chain = MultiPromptChain(router_chain=router_chain, 
                          destination_chains=destination_chains, 
                          default_chain=default_chain, verbose=True
                         )
 
+# Physics question, so the route should be the physics chain.
+# The commented calls would send a math question, then a biology question.
+# Biology is not one of the four destinations, so that call is the DEFAULT path.
 print(chain.run("What is black body radiation?"))
 
 # print(chain.run("what is 2 + 2"))

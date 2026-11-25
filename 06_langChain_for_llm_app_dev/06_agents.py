@@ -1,4 +1,5 @@
 import warnings
+# Hide warnings from the agent and tool libraries for the rest of this file.
 warnings.filterwarnings("ignore")
 from datetime import date
 # account for deprecation of LLM model
@@ -12,15 +13,24 @@ from langchain_experimental.tools import PythonREPLTool
 from langchain_openai import ChatOpenAI as _ChatOpenAI
 
 from dotenv import load_dotenv, find_dotenv
+# Load OPENAI_API_KEY from a local .env. ChatOpenAI reads it on its own.
 _ = load_dotenv(find_dotenv()) # read local .env file
 
-# gpt-5-nano rejects the `stop` sequences used by classic ReAct / LLMMathChain.
+# gpt-5-nano rejects the stop sequences classic ReAct agents send.
+# This subclass drops stop before the request is built. Every ChatOpenAI(...) below is this class,
+# so a stop list never reaches the API. The messages themselves are unchanged.
 class ChatOpenAI(_ChatOpenAI):
     def _get_request_payload(self, input_, *, stop=None, **kwargs):
         return super()._get_request_payload(input_, stop=None, **kwargs)
 
-# Native tool calling instead of CHAT_ZERO_SHOT_REACT_DESCRIPTION / create_python_agent.
-# Those ReAct agents need `stop`, which this model does not support.
+# Local stand-in for the old initialize_agent.
+# The agent= argument is accepted so the calls below can still pass AgentType, and this function does not use it.
+# It always builds a tool-calling agent. The model sees the system text, the {input} question,
+# and {agent_scratchpad}, where earlier tool calls and results are inserted on the next turn.
+# That placeholder name has to stay agent_scratchpad, because create_tool_calling_agent writes that key.
+# AgentExecutor runs the loop: the model picks a tool or a final answer, the tool runs,
+# and the observation goes back onto the scratchpad. handle_parsing_errors keeps the loop
+# going when a step does not parse. verbose prints each step.
 def initialize_agent(
     tools,
     llm,
@@ -43,6 +53,8 @@ def initialize_agent(
         **kwargs,
     )
 
+# Same executor, with one tool and a system prompt that tells the model to use the Python REPL.
+# The system string is what the model sees. The REPL is what runs the code.
 def create_python_agent(llm, tool, verbose=True, **kwargs):
     return initialize_agent(
         [tool],
@@ -58,20 +70,18 @@ def create_python_agent(llm, tool, verbose=True, **kwargs):
         **kwargs,
     )
 
-# Get the current date
+# After 2024-06-12 the model is gpt-4o-mini; on or before that date it is gpt-5-nano.
 current_date = datetime.datetime.now().date()
-
-# Define the date after which the model should be set to "gpt-3.5-turbo"
 target_date = datetime.date(2024, 6, 12)
-
-# Set the model variable based on the current date
 if current_date > target_date:
     llm_model = "gpt-4o-mini"
 else:
     llm_model = "gpt-5-nano"
 
-# Built-in LangChain tools
-
+# llm-math and wikipedia are ready-made tools. load_tools builds them and passes llm through,
+# because llm-math needs its own model call. The model sees each tool's name and description.
+# The tool runs when the agent calls it. temperature=1 is the value this model is called with.
+# initialize_agent here is the function above. The 25% question is the math-tool path, left commented.
 llm = ChatOpenAI(temperature=1, model=llm_model)
 
 tools = load_tools(["llm-math","wikipedia"], llm=llm)
@@ -85,6 +95,9 @@ agent= initialize_agent(
 
 # print(agent.invoke({"input": "What is the 25% of 300?"}))
 
+# Unused string. A Wikipedia question: which book Tom Mitchell wrote.
+# invoke would return the agent's result dict, and the print would show it.
+# Nothing calls the math-and-wikipedia agent before this block, and the block itself does not run.
 '''
 # Wikipedia example
 
@@ -97,14 +110,15 @@ result = agent.invoke({"input": question})
 print(result)
 '''
 
-# Python Agent
-
+# This agent replaces the math-and-wikipedia agent. Nothing called that one.
+# PythonREPLTool is a REPL: the model writes code, the tool executes it, and the output comes back.
 agent = create_python_agent(
     llm,
     tool=PythonREPLTool(),
     verbose=True
 )
 
+# The table the commented calls would ask the agent to sort by last name, then first name.
 customer_list = [["Harrison", "Chase"], 
                  ["Lang", "Chain"],
                  ["Dolly", "Too"],
@@ -118,6 +132,8 @@ customer_list = [["Harrison", "Chase"],
 # last name and then first name \
 # and print the output: {customer_list}"""}))
 
+# The second commented call is that same sort with tracing on, so the prompts would be visible.
+# set_debug(False) turns the tracing off again.
 set_debug(True)
 
 # print(agent.invoke({"input": f"""Sort these customers by \
@@ -126,8 +142,8 @@ set_debug(True)
 
 set_debug(False)
 
-# Define your own tool
-
+# @tool publishes time to the model. The docstring is the description the model reads.
+# The function body is what runs. text is ignored. The return is today's date as a string.
 @tool
 def time(text: str) -> str:
     """Returns todays date, use this for any \
@@ -138,6 +154,7 @@ def time(text: str) -> str:
     outside this function."""
     return str(date.today())
 
+# This agent replaces the Python agent. The tool list is llm-math, wikipedia, and time.
 agent= initialize_agent(
     tools + [time], 
     llm, 
@@ -145,6 +162,8 @@ agent= initialize_agent(
     handle_parsing_errors=True,
     verbose = True)
 
+# The only agent call this file makes. The question should select the time tool.
+# On any failure the bare except prints a fixed message and the lesson ends.
 try:
     result = agent.invoke({"input": "whats the date today?"}) 
 except: 

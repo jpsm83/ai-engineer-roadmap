@@ -13,8 +13,12 @@ from dotenv import load_dotenv, find_dotenv
 from rich import print
 from rich.markdown import Markdown as RichMarkdown
 
+# Load OPENAI_API_KEY from a local .env. ChatOpenAI and OpenAIEmbeddings read it on their own.
 _ = load_dotenv(find_dotenv()) # read local .env file
 
+# One catalog row becomes one Document.
+# page_content is "column: value" lines, the text the retriever later returns.
+# metadata records the file path and the row number. lazy_load yields the rows; load() collects them.
 class CSVLoader(BaseLoader):
     """Load a CSV file as one Document per row (column: value lines)."""
 
@@ -33,17 +37,17 @@ class CSVLoader(BaseLoader):
 
 warnings.filterwarnings('ignore')
 
+# Render an IPython Markdown value in the terminal.
+# Markdown carries the text on .data. Anything else is turned into a string.
+# RichMarkdown is what draws it.
 def display(obj):
     text = obj.data if isinstance(obj, Markdown) else str(obj)
     print(RichMarkdown(text or ""))
 
-# Get the current date
+# After 2024-06-12 the chat model is gpt-5-nano; on or before that date it is gpt-6-luna.
+# temperature=1 is the value this call sends.
 current_date = datetime.datetime.now().date()
-
-# Define the date after which the model should be set to "gpt-3.5-turbo"
 target_date = datetime.date(2024, 6, 12)
-
-# Set the model variable based on the current date
 if current_date > target_date:
     llm_model = "gpt-5-nano"
 else:
@@ -51,6 +55,10 @@ else:
 
 llm = ChatOpenAI(temperature=1, model=llm_model)
 
+# Short path: point the loader at the catalog, embed every row, and build an in-memory index in one call.
+# OpenAIEmbeddings turns text into vectors. from_loaders reads the loader, embeds each document,
+# and stores the vectors. index.query is the whole retrieve-then-answer step.
+# It stays commented so the same path can be built in the open below.
 file = 'OutdoorClothingCatalog_1000.csv'
 loader = CSVLoader(file_path=file)
 
@@ -68,24 +76,30 @@ in a table in markdown and summarize each one."
 
 # display(Markdown(response))
 
-# Step By Step
-
+# The same index, one step at a time.
+# loader.load() runs lazy_load and returns every row as a Document. docs[0] would be the first product.
 docs = loader.load()
 
 # print(docs[0])
 
 
+# embed_query turns one sentence into a vector. The prints would show its length and the first five numbers.
+# The vector is not used again. It is here so you can see what a query becomes before the search.
 embed = embeddings.embed_query("Hi my name is Joao")
 
 # print(len(embed))
 
 # print(embed[:5])
 
+# from_documents embeds the catalog and stores it. This is the store the index creator built above.
 db = InMemoryVectorStore.from_documents(
     docs, 
     embeddings
 )
 
+# This query replaces the table question above. similarity_search returns the nearest documents.
+# This docs replaces the full catalog. From here on, docs is only the search hits.
+# The prints would show how many came back and the top document.
 query = "Please suggest a shirt with sunblocking"
 
 docs = db.similarity_search(query)
@@ -94,8 +108,12 @@ docs = db.similarity_search(query)
 
 # print(docs[0])
 
+# as_retriever wraps the store so RetrievalQA can call it with a question.
 retriever = db.as_retriever()
 
+# Join the hit texts into one string. The commented invoke is the manual version of "stuff":
+# the retrieved rows and the question go in one prompt, and .content is the reply.
+# RetrievalQA below is the library object that takes over that join-and-ask step.
 qdocs = "".join([docs[i].page_content for i in range(len(docs))])
 
 # response = llm.invoke(f"{qdocs} Question: Please list all your \
@@ -103,6 +121,8 @@ qdocs = "".join([docs[i].page_content for i in range(len(docs))])
 
 # display(Markdown(response))
 
+# chain_type "stuff" joins the retrieved documents into one prompt and asks once.
+# verbose=True prints that prompt. retriever is the store wrapper from the line above.
 qa_stuff = RetrievalQA.from_chain_type(
     llm=llm, 
     chain_type="stuff", 
@@ -110,6 +130,9 @@ qa_stuff = RetrievalQA.from_chain_type(
     verbose=True
 )
 
+# This query replaces the short suggestion. Both calls below use it.
+# qa_stuff.run is the step-by-step chain. index.query is the one-liner from the top, now actually called.
+# The two displays are there so the answers can be compared.
 query =  "Please list all your shirts with sun protection in a table \
 in markdown and summarize each one."
 
@@ -121,6 +144,7 @@ response2 = index.query(query, llm=llm)
 
 display(Markdown(response2))
 
+# Unused string. It rebuilds the index the same way as the first block and does not run.
 '''
 index = VectorstoreIndexCreator(
     vectorstore_cls=InMemoryVectorStore,

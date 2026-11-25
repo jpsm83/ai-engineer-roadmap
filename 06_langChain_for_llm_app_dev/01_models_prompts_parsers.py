@@ -1,5 +1,6 @@
 import os
 import datetime
+# rich.print replaces builtin print for the rest of this file.
 from rich import print
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
@@ -7,23 +8,23 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_classic.output_parsers import ResponseSchema, StructuredOutputParser
 
+# Load OPENAI_API_KEY from a local .env. The client below sends that key on each request.
 _ = load_dotenv(find_dotenv())  # read local .env file
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Get the current date
+# Pick the chat model name from today's date.
+# After 2024-06-12 the lesson uses gpt-5-nano; on or before that date it uses gpt-6-luna.
+# get_completion and ChatOpenAI both read llm_model.
 current_date = datetime.datetime.now().date()
-
-# Define the date after which the model should be set to "gpt-5-nano"
 target_date = datetime.date(2024, 6, 12)
-
-# Set the model variable based on the current date
 if current_date > target_date:
  llm_model = "gpt-5-nano"
 else:
  llm_model = "gpt-6-luna"
 
-# Chat API : OpenAI
-
+# Smallest path in the file: one user string in, the assistant's reply text out.
+# create() returns a completion; the text is choices[0].message.content.
+# The LangChain chat object below does this same job without building the messages list here.
 def get_completion(prompt, model=llm_model):
  messages = [{"role": "user", "content": prompt}]
  response = client.chat.completions.create(
@@ -33,8 +34,12 @@ def get_completion(prompt, model=llm_model):
  )
  return response.choices[0].message.content
 
+# Would print the model's answer to "What is 1+1?". Left off so this file does not call the API yet.
 # print(get_completion("What is 1+1?"))
 
+# The translation task as one f-string, before any template.
+# customer_email is the pirate complaint. style is the voice to rewrite it into.
+# prompt is the full user message. The prints below would show that message and the reply.
 customer_email = """
 Arrr, I be fuming that me blender lid \
 flew off and splattered me kitchen walls \
@@ -58,15 +63,17 @@ text: ```{customer_email}```
 # response = get_completion(prompt)
 # print(response)
 
-# Chat API : LangChain
-
+# Same chat call, now through LangChain. ChatOpenAI is the model object.
+# It uses the llm_model name from above. temperature=1.0 is the value this call sends.
+# print(chat) would show the model object, not a reply.
 # To control the randomness and creativity of the generated
 # text by an LLM, use temperature = 0.0
 chat = ChatOpenAI(temperature=1.0, model=llm_model)
 # print(chat)
 
-# Prompt template
-
+# The template replaces the f-string. {style} and {text} are the slots.
+# from_template reads those names off the string. format_messages is what fills them.
+# The prints would show the template text and the slot names.
 template_string = """Translate the text \
 that is delimited by triple backticks \
 into a style that is {style}. \
@@ -78,6 +85,10 @@ prompt_template = ChatPromptTemplate.from_template(template_string)
 # print(prompt_template.messages[0].prompt)
 # print(prompt_template.messages[0].prompt.input_variables)
 
+# This customer_email replaces the one above. This string is what fills {text}.
+# customer_style fills {style}. The keyword names have to match the template slots.
+# format_messages returns a list of chat messages. The prints would show the list's type,
+# the first item's type, and the message itself.
 customer_style = """American English \
 in a calm and respectful tone
 """
@@ -99,11 +110,14 @@ customer_messages = prompt_template.format_messages(
 # print(type(customer_messages[0]))
 # print(customer_messages[0])
 
-# Call the LLM to translate to the style of the customer message
+# invoke would send that message list and return an AI message.
+# .content is the reply string. Left commented, so this translation is not called.
 # customer_response = chat.invoke(customer_messages)
 
 # print(customer_response.content)
 
+# Same template, other direction. The blunt reply fills {text}; the pirate style fills {style}.
+# No new template is built. The commented invoke would print the pirate rewrite.
 service_reply = """Hey there customer, \
 the warranty does not cover \
 cleaning expenses for your kitchen \
@@ -126,14 +140,16 @@ service_messages = prompt_template.format_messages(style=service_style_pirate, t
 # service_response = chat.invoke(service_messages)
 # print(service_response.content)
 
-# Output Parsers
-
+# The dict is the shape the lesson wants from a review: gift, delivery_days, price_value.
+# Nothing reads it. It is here so those keys are visible before a prompt asks for them.
 {
   "gift": False,
   "delivery_days": 5,
   "price_value": "pretty affordable!"
 }
 
+# The review is the text to extract from. review_template asks for those three keys as JSON.
+# {text} is the only slot.
 customer_review = """\
 This leaf blower is pretty amazing.  It has four settings:\
 candle blower, gentle breeze, windy city, and tornado. \
@@ -166,6 +182,10 @@ price_value
 text: {text}
 """
 
+# This prompt_template replaces the translation template.
+# format_messages fills {text} with the review. The chat line rebuilds the same model for this section.
+# invoke would return an AI message whose .content is still a string when the text looks like JSON.
+# That is why .get('gift') cannot work on it. The parser below is what turns the string into a dict.
 prompt_template = ChatPromptTemplate.from_template(review_template)
 # print(prompt_template)
 
@@ -180,8 +200,9 @@ chat = ChatOpenAI(temperature=1.0, model=llm_model)
 # 'gift' is a string
 # response.content.get('gift')
 
-# Parse the LLM output string into a Python dictionary
-
+# Each ResponseSchema is one field the parser will look for.
+# name becomes the dict key. description is the instruction the model sees for that field.
+# These objects do not extract anything. They only describe the JSON shape.
 gift_schema = ResponseSchema(name="gift", description="Was the item purchased\
 as a gift for someone else? \
 Answer True if yes,\
@@ -198,6 +219,9 @@ sentences about the value or \
 price, and output them as a \
 comma separated Python list.")
 
+# The parser is built from those three schemas, in that order.
+# get_format_instructions() turns them into text to paste into a prompt.
+# The print would show that text.
 response_schemas = [gift_schema, delivery_days_schema, price_value_schema]
 
 output_parser = StructuredOutputParser.from_response_schemas(response_schemas)
@@ -206,6 +230,8 @@ format_instructions = output_parser.get_format_instructions()
 
 # print(format_instructions)
 
+# Second review template. It adds a {format_instructions} slot beside {text}.
+# prompt is the template used for the call that actually runs. Both slots are filled together.
 review_template_2 = """\
 For the following text, extract the following information:
 
@@ -227,6 +253,11 @@ prompt = ChatPromptTemplate.from_template(template=review_template_2)
 
 messages = prompt.format_messages(text=customer_review, format_instructions=format_instructions)
 
+# The call this file actually runs.
+# messages[0].content is the filled prompt: the review plus the format instructions.
+# invoke returns an AI message; response.content is the model's string.
+# parse turns that string into a dict keyed by gift, delivery_days, and price_value.
+# The next three lines inspect the dict, its type, and delivery_days.
 print(messages[0].content)
 
 response = chat.invoke(messages)
@@ -241,6 +272,7 @@ type(output_dict)
 
 output_dict.get('delivery_days')
 
+# Checklist of the same path this file just walked: model, template, messages, invoke, then the parser.
 # LangChain pattern used in this file
 #
 # 1. Create the model
