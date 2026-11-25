@@ -89,11 +89,12 @@ encodings_matrix = torch.tensor([[1.16, 0.23],
                                  [4.41, -2.16]])
 
 # Fixes the random start of W_q, W_k, and W_v so the weight prints match
-# a second run. d_model=2 matches the two feature columns above. row_dim 0
-# is the token axis and col_dim 1 is the feature axis that forward transposes.
+# a second run.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
+# d_model=2 matches the two feature columns above. row_dim 0 is the token
+# axis and col_dim 1 is the feature axis that forward transposes.
 ## create a basic self_attention ojbect
 selfAttention = SelfAttention(d_model=2,
                                row_dim=0,

@@ -84,11 +84,11 @@ encodings_for_v = torch.tensor([[1.16, 0.23],
 
 # The projections start at random. Pinning the seed makes W_q, W_k, and W_v
 # the same on every run, so the printed matrices can be compared by hand.
-# d_model=2 is the width of the encodings above. Axis 0 is a token, axis 1
-# is a feature.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
+# d_model=2 is the width of the encodings above. Axis 0 is a token, axis 1
+# is a feature. forward uses those axes when it transposes the keys.
 ## create an attention object
 attention = Attention(d_model=2,
                       row_dim=0,
