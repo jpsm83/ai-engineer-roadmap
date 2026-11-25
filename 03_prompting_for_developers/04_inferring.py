@@ -3,10 +3,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -16,6 +22,7 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Lamp review read by the sentiment and extraction prompts in examples 1–6.
 lamp_review = """
 Needed a nice lamp for my bedroom, and this one had \
 additional storage and not too high of a price point. \
@@ -28,6 +35,10 @@ Lumina seems to me to be a great company that cares \
 about their customers and products!!
 """
 
+# Examples 1–6 are unused. They all read lamp_review and tighten the answer:
+# open sentiment; one word, positive or negative; up to five lowercase emotions;
+# anger as yes or no; JSON "Item" and "Brand", or "unknown"; then one JSON
+# with sentiment, anger as a boolean, item, and brand.
 '''
 # ============================== example 1 ==============================
 
@@ -125,6 +136,8 @@ print(response)
 # =============================================================================
 # =============================================================================
 
+# News-style story for the topic prompts. This replaces the lamp review
+# as the text the model reads. Prompts paste it in as {story}.
 story = """
 In a recent survey conducted by the government, 
 public sector employees were asked to rate their level 
@@ -155,6 +168,8 @@ work towards improving job satisfaction across all departments.
 
 # ============================== example 7 ==============================
 
+# Ask for five topics from the story, one or two words each, comma-separated.
+# get_completion returns that list as a single string.
 prompt = f"""
 Determine five topics that are being discussed in the \
 following text, which is delimited by triple backticks.
@@ -168,13 +183,20 @@ Text sample: ```{story}```
 response = get_completion(prompt)
 print(response)
 
+# Would split that comma-separated list. The result is thrown away;
+# the check below uses topic_list, not whatever the model just returned.
 response.split(sep=',')
 
+# Topics this lesson will look for. The next prompt prints these names,
+# and the lookup below reads the key "nasa", so the model has to answer
+# with that same spelling.
 topic_list = [
     "nasa", "local government", "engineering", 
     "employee satisfaction", "federal government"
 ]
 
+# For each name in topic_list, ask for a line "name: 0" or "name: 1".
+# 1 means the story is about that topic. The joined list is what the model sees.
 prompt = f"""
 Determine whether each item in the following list of \
 topics is a topic in the text below, which
@@ -190,6 +212,9 @@ Text sample: ```{story}```
 response = get_completion(prompt)
 print(response)
 
+# Turn "topic: 0" / "topic: 1" lines into a dict.
+# topic_dict['nasa'] only matches if a line used that name from topic_list.
+# A 1 means the story is about NASA, so the lesson prints an alert.
 topic_dict = {i.split(': ')[0]: int(i.split(': ')[1]) for i in response.split(sep='\n')}
 if topic_dict['nasa'] == 1:
     print("ALERT: New NASA story!")

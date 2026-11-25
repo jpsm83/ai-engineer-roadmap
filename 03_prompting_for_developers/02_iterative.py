@@ -4,10 +4,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -17,6 +23,8 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Chair spec. Prompts paste it in by writing {fact_sheet_chair} inside an
+# f-string, so that name has to be this variable.
 fact_sheet_chair = """
 OVERVIEW
 - Part of a beautiful family of mid-century inspired office furniture, 
@@ -58,6 +66,12 @@ COUNTRY OF ORIGIN
 - Italy
 """
 
+# Examples 1–4 sit in an unused string, so only example 5 calls the API.
+# Each one writes a retail description from the chair spec and adds a constraint:
+# 1. No length limit and no audience.
+# 2. At most 50 words. len(response.split()) would count those words.
+# 3. Aimed at furniture retailers, and focused on materials.
+# 4. Also include every 7-character product id, such as SWC-100 and SWC-110.
 # ============================== example 1 ==============================
 
 '''
@@ -145,6 +159,11 @@ print(response)
 
 # ============================== example 5 ==============================
 
+# The prompt that runs. It keeps the retailer focus, the 50-word cap, and
+# the product ids, then asks for an inches-only table titled
+# "Product Dimensions", all as HTML inside a <div>.
+# get_completion returns that markup. print shows the tags;
+# display(HTML) renders them when this runs in a notebook.
 prompt = f"""
 Your task is to help a marketing team create a 
 description for a retail website of a product based 

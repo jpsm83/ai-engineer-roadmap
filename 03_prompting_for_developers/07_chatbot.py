@@ -4,10 +4,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# Single-prompt helper from the earlier lessons: one user string in,
+# assistant text out. create() returns a completion; the text is
+# choices[0].message.content. The chat below calls get_completion_from_messages instead.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -17,6 +23,11 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Chat call. messages is a list of {"role", "content"} dicts, system turn
+# included. create() returns a completion; this hands back only the
+# assistant text. The temperature argument is not forwarded: the create()
+# line leaves it commented out. The commented print would show the whole
+# message object.
 def get_completion_from_messages(messages, model="gpt-5-nano", temperature=1):
     response = client.chat.completions.create(
         model=model,
@@ -26,6 +37,12 @@ def get_completion_from_messages(messages, model="gpt-5-nano", temperature=1):
 #   print(str(response.choices[0].message))
     return response.choices[0].message.content
 
+# Runs on each Chat click. The argument is the button event, unused here.
+# inp.value_input is the submitted text; setting inp.value to '' clears the box.
+# That user turn is appended to context, the whole list is sent, and the
+# assistant reply is appended too, so the next click still sees earlier turns.
+# panels is only the display: a user row and an assistant row.
+# The returned column is what Panel redraws.
 def collect_messages(_):
     prompt = inp.value_input
     inp.value = ''
@@ -39,6 +56,12 @@ def collect_messages(_):
  
     return pn.Column(*panels)
 
+# Examples 1–4 are unused. Each one sends a fresh messages list, which is
+# all the model can see on that call:
+# 1. A Shakespeare system turn, then a joke the model is meant to finish.
+# 2. The user says their name. Nothing is kept after the call returns.
+# 3. A new list asks for the name and never includes it, so the model cannot know.
+# 4. The same question, but the name is already in the assistant turn, so it can.
 '''
 # ============================== example 1 ==============================
 
@@ -83,10 +106,15 @@ print(response)
 # ==============================================================================
 # ==============================================================================
 
+# Load Panel before building widgets.
 pn.extension()
 
 panels = [] # collect display 
 
+# Conversation the model sees. It starts as the OrderBot system prompt:
+# greet, take the whole order, ask pickup or delivery, summarize, then
+# collect payment, using the menu prices in that text. Clicks append
+# user and assistant turns onto this same list. panels above is display only.
 context = [ {'role':'system', 'content':"""
 You are OrderBot, an automated service to collect orders for a pizza restaurant. \
 You first greet the customer, then collects the order, \
@@ -119,6 +147,10 @@ bottled water 5.00 \
 
 # ============================== example 5 ==============================
 
+# Text box and the Chat button. bind runs collect_messages on each click.
+# pn.panel shows the column that callback returns, with a loading indicator
+# while the model call is in flight. The column is the page: input, button,
+# then that transcript.
 inp = pn.widgets.TextInput(value="Hi", placeholder='Enter text here…')
 button_conversation = pn.widgets.Button(name="Chat!")
 
@@ -136,6 +168,10 @@ dashboard.show()
 
 # ============================== example 6 ==============================
 
+# After show() returns, copy the chat so far and append a system turn that
+# asks for JSON: pizza and size, toppings, drinks and size, sides and size,
+# and the total price. copy() leaves the OrderBot context unchanged.
+# The commented line under the message is an alternate field list, left as written.
 messages =  context.copy()
 messages.append(
 {'role':'system', 'content':'create a json summary of the previous food order. Itemize the price for each item\

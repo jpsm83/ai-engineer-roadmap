@@ -3,10 +3,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -16,6 +22,7 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Panda-plush review pasted into the prompts below as {prod_review}.
 prod_review = """
 Got this panda plush toy for my daughter's birthday, \
 who loves it and takes it everywhere. It's soft and \
@@ -27,6 +34,12 @@ so I got to play with it myself before I gave it \
 to her.
 """
 
+# Examples 1–4 are unused, so only the loop in example 5 calls the API.
+# Same panda review, four ways of aiming the model:
+# 1. A summary of at most 30 words, with no audience.
+# 2. That summary for the shipping department.
+# 3. That summary for pricing, focused on price and perceived value.
+# 4. Shipping and delivery facts pulled out, instead of a summary.
 '''
 # ============================== example 1 ==============================
 
@@ -98,6 +111,8 @@ print(response)
 
 # ============================== example 5 ==============================
 
+# Four reviews. review_1 is the panda text above; the next three are a lamp,
+# a toothbrush, and a blender. The loop summarizes each in at most 20 words.
 review_1 = prod_review 
 
 # review for a standing lamp
@@ -170,6 +185,8 @@ two days.
 
 reviews = [review_1, review_2, review_3, review_4]
 
+# One completion per review. reviews[i] fills the prompt, and the printed
+# line is the short summary get_completion returns.
 for i in range(len(reviews)):
     prompt = f"""
     Your task is to generate a short summary of a product \

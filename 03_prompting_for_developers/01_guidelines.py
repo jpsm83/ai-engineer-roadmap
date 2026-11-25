@@ -3,10 +3,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -16,6 +22,12 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Examples 1–9 stay in one unused string so they do not call the API.
+# In order: one-sentence summary; JSON books; tea steps as Step N; the same
+# step prompt on a park scene ("No steps provided."); a grandparent voice
+# the model continues; four tasks with no template, then with a labeled format.
+# Example 8 grades the solar writeup as given (maintenance is $100 per square
+# foot, not $10). Example 9 stops at "Actual solution:" so the model solves it first.
 '''
 # =========================== example 1 ===========================
 
@@ -292,6 +304,9 @@ print(response)
 # =========================== example 10 ===========================
 # hallucination
 
+# The one call that runs. AeroGlide is not a real product, so a careful
+# reply would say it does not know the toothbrush. get_completion returns
+# the assistant text, which often invents details anyway.
 prompt = f"""
 Tell me about AeroGlide UltraSlim Smart Toothbrush by Boie
 """

@@ -5,10 +5,16 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# Temperature stays commented out because gpt-5-nano only accepts its default.
 def get_completion(prompt, model="gpt-5-nano"):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -18,6 +24,11 @@ def get_completion(prompt, model="gpt-5-nano"):
     )
     return response.choices[0].message.content
 
+# Examples 1–8 are unused. In order: English to Spanish; name a French
+# question's language; one sentence into French, Spanish, and pirate English;
+# formal and informal Spanish; for each support message, name the language
+# then translate to English and Korean; slang as a business letter; employees
+# as an HTML table display would render; proofread grammar, homonyms, spelling.
 '''
 # ============================== example 1 ==============================
 
@@ -128,6 +139,8 @@ for t in text:
 
 # ============================== example 9 ==============================
 
+# Example 9 runs. text is the panda review. The prompt asks for a proofread,
+# and get_completion returns the corrected wording example 10 then diffs.
 text = f"""
 Got this for my daughter for her birthday cuz she keeps taking \
 mine from my room.  Yes, adults also like pandas too.  She takes \
@@ -144,6 +157,10 @@ print(response)
 
 # ============================== example 10 ==============================
 
+# Redlines(text, response) compares the original review with the proofread
+# one. output_markdown is that diff; display renders it in a notebook.
+# The next prompt starts again from text, not from response, and asks for
+# a more compelling APA-style version in markdown. That call replaces response.
 diff = Redlines(text,response)
 display(Markdown(diff.output_markdown))
 

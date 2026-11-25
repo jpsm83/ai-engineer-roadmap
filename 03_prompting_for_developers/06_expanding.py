@@ -3,10 +3,17 @@ from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 from rich import print
 
+# Load OPENAI_API_KEY from a local .env file into the environment.
 _ = load_dotenv(find_dotenv())  # read local .env file
 
+# Client for every chat.completions.create call below.
+# api_key is the value just loaded; the SDK sends it on each request.
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+# One user prompt in, the assistant's reply text out.
+# create() returns a completion object; the text is choices[0].message.content.
+# temperature is accepted but not sent: that argument stays commented out
+# because gpt-5-nano only allows its default.
 def get_completion(prompt, model="gpt-5-nano", temperature=1):
     messages = [{"role": "user", "content": prompt}]
     response = client.chat.completions.create(
@@ -16,6 +23,9 @@ def get_completion(prompt, model="gpt-5-nano", temperature=1):
     )
     return response.choices[0].message.content
 
+# Written here as "negative", not computed in this file. That value
+# selects the apology branch. Prompts paste these in as {sentiment} and
+# {review}, so those spellings have to match these two names.
 # given the sentiment from the lesson on "inferring",
 # and the original customer message, customize the email
 sentiment = "negative"
@@ -54,6 +64,8 @@ consumer loyalty to maintain sales. Got it in about \
 two days.
 """
 
+# Example 1 is the same reply prompt, stored unused.
+# Example 2 is the call that runs.
 '''
 # ============================== example 1 ==============================
 
@@ -78,6 +90,9 @@ print(response)
 
 # ============================== example 2 ==============================
 
+# Customer-service reply. The prompt thanks the customer, and if sentiment
+# is negative it apologizes and points them to customer service.
+# temperature=1 is passed in, but get_completion does not forward it.
 prompt = f"""
 You are a customer service AI assistant.
 Your task is to send an email reply to a valued customer.
