@@ -12,6 +12,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import lamini
 from lamini import BasicModelRunner
+# rich.print pretty-prints the completion strings this lesson displays.
 from rich import print
 
 ## Load the shared .env from the repository root, regardless of the current
@@ -19,9 +20,13 @@ from rich import print
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 ## Configure the Lamini client with the URL and API key from the environment.
+# Both runners below send the prompt to Lamini and return the completion text.
+# api_url is the host; api_key is the credential sent with each request.
 lamini.api_url = os.getenv("POWERML__PRODUCTION__URL")
 lamini.api_key = os.getenv("POWERML__PRODUCTION__KEY")
 
+# Stop here when either value is missing or still the placeholder "none".
+# The comparisons below all go through that same client.
 if (
     not lamini.api_url
     or not lamini.api_key
@@ -38,7 +43,13 @@ if (
 ## This first model is the base Llama 2 model, without chat fine-tuning.
 non_finetuned = BasicModelRunner("meta-llama/Llama-2-7b-hf")
 
-## Send the same kinds of prompts to the base model.
+# Four prompts, each a different shape, sent to the base model.
+# Calling the runner returns the completion string; print shows it.
+# 1. an instruction ("train my dog to sit")
+# 2. an opinion question ("What do you think of Mars?")
+# 3. a short completion ("taylor swift's best friend")
+# 4. a support transcript that stops on "Agent:", so the model is asked to continue that turn
+# The chat model later in the file receives these same four strings.
 non_finetuned_output = non_finetuned("Tell me how to train my dog to sit")
 
 print(non_finetuned_output)
@@ -57,6 +68,8 @@ Agent:"""))
 ## conversation, so its answers should be more useful on these prompts.
 finetuned_model = BasicModelRunner("meta-llama/Llama-2-7b-chat-hf")
 
+# Same dog-training instruction as the first base-model call, so the two
+# printed completions are the comparison.
 finetuned_output = finetuned_model("Tell me how to train my dog to sit")
 
 print(finetuned_output)
@@ -67,6 +80,7 @@ print(finetuned_model("[INST]Tell me how to train my dog to sit[/INST]"))
 
 print(non_finetuned("[INST]Tell me how to train my dog to sit[/INST]"))
 
+# Same opinion question and short completion as the base model.
 print(finetuned_model("What do you think of Mars?"))
 
 print(finetuned_model("taylor swift's best friend"))

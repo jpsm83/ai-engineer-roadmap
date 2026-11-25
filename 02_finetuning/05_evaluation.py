@@ -22,6 +22,7 @@ import pandas as pd
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
+# rich.print pretty-prints questions, answers, and the results table.
 from rich import print
 
 DATA_DIR = Path(__file__).resolve().parent
@@ -53,6 +54,8 @@ def inference(
 ):
     """Generate an answer for one prompt and strip the prompt from the output."""
     ## Tokenize the prompt into model input IDs.
+    # return_tensors="pt" makes those ids a PyTorch tensor so they can move
+    # onto the model's device. max_length here caps the prompt, not the answer.
     tokenizer.pad_token = tokenizer.eos_token
     input_ids = tokenizer.encode(
         text,
@@ -64,6 +67,7 @@ def inference(
     ## Generate tokens. The model continues the prompt one token at a time.
     ## The attention mask marks real tokens, and pad_token_id tells generate()
     ## which ID to use for padding.
+    # max_length is the total token budget for the prompt plus new tokens.
     device = model.device
     attention_mask = torch.ones_like(input_ids)
     generated_tokens_with_prompt = model.generate(
@@ -74,11 +78,14 @@ def inference(
     )
 
     ## Decode the token IDs back into text, dropping special tokens.
+    # One prompt went in, so the list has one string. The slice below uses [0].
     generated_text_with_prompt = tokenizer.batch_decode(
         generated_tokens_with_prompt, skip_special_tokens=True
     )
 
     ## The decoded text starts with the prompt, so remove that prefix.
+    # The slice is in characters and keeps the answer only when the decoded
+    # text begins with the exact prompt string.
     generated_text_answer = generated_text_with_prompt[0][len(text):]
 
     return generated_text_answer
@@ -170,6 +177,9 @@ def show_evaluation_dataset():
     print(evaluation_dataset)
 
     ## The dataset has a train split; show its structure as a table.
+    # These rows are printed and not scored. The exact-match loop above
+    # already scored DATASET_NAME. This second set is the course's extra
+    # questions for a later pass.
     evaluation_df = pd.DataFrame(evaluation_dataset["train"])
     print(evaluation_df.head())
 
@@ -232,6 +242,10 @@ def run_lm_evaluation_harness():
 
 
 def main():
+    # Order: load the held-out questions, load the longer-trained model and
+    # the tokenizer that matches MODEL_NAME, check one answer, then score a
+    # short batch with exact match. The extra evaluation set is only printed.
+    # ARC Easy runs when the harness is installed.
     test_dataset = load_test_data()
     model, tokenizer = load_model()
 

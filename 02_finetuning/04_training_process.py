@@ -34,6 +34,7 @@ from transformers import (
     Trainer as HFTrainer,
     TrainingArguments,
 )
+# rich.print pretty-prints datasets, losses, and generated answers below.
 from rich import print
 
 logger = logging.getLogger(__name__)
@@ -146,6 +147,9 @@ def tokenize_and_split_data(training_config, tokenizer):
 
     if use_hf:
         ## Published datasets already provide train/test splits.
+        # This branch returns those splits as published. It does not run the
+        # local tokenizer. The other path, load_local_dataset, tokenizes the
+        # JSONL and then splits it.
         dataset = datasets.load_dataset(dataset_path)
         return dataset["train"], dataset["test"]
 
@@ -155,6 +159,8 @@ def tokenize_and_split_data(training_config, tokenizer):
 def inference(text, model, tokenizer, max_input_tokens=1000, max_output_tokens=100):
     """Generate an answer with a model and strip the prompt from the output."""
     ## Tokenize: turn the prompt text into model input IDs.
+    # return_tensors="pt" makes those ids a PyTorch tensor so the next
+    # line can move them onto the model's device.
     input_ids = tokenizer.encode(
         text,
         return_tensors="pt",
@@ -163,6 +169,8 @@ def inference(text, model, tokenizer, max_input_tokens=1000, max_output_tokens=1
     )
 
     ## Generate: let the model continue the prompt.
+    # max_length is the total token budget for prompt plus new tokens.
+    # The default of 100 includes the prompt, so a long prompt leaves little room.
     device = model.device
     generated_tokens_with_prompt = model.generate(
         input_ids=input_ids.to(device),
@@ -170,11 +178,14 @@ def inference(text, model, tokenizer, max_input_tokens=1000, max_output_tokens=1
     )
 
     ## Decode: convert token IDs back into text.
+    # batch_decode returns a list with one string, because one prompt went in.
     generated_text_with_prompt = tokenizer.batch_decode(
         generated_tokens_with_prompt, skip_special_tokens=True
     )
 
     ## The generated text still starts with the prompt, so remove it.
+    # The slice is in characters and keeps the answer only when the decoded
+    # text begins with the exact prompt string.
     generated_text_answer = generated_text_with_prompt[0][len(text):]
 
     return generated_text_answer
@@ -200,11 +211,14 @@ class Trainer(HFTrainer):
     ):
         ## Use a language-modeling collator so variable-length examples are
         ## padded correctly and padding labels become -100 (ignored by loss).
+        # mlm=False selects causal language modeling: predict the next token.
         if data_collator is None and tokenizer is not None:
             data_collator = DataCollatorForLanguageModeling(
                 tokenizer=tokenizer, mlm=False
             )
 
+        # The installed Trainer takes the tokenizer as processing_class.
+        # This subclass still receives it under the name tokenizer.
         super().__init__(
             model=model,
             args=args,
@@ -222,6 +236,8 @@ class Trainer(HFTrainer):
         self.total_steps = total_steps
         self.model_flops = model_flops
         self.start_step = 0
+        # training_step uses accelerator.backward while this stays False.
+        # The GradScaler branch in that method is left unused.
         self.do_grad_scaling = False
 
     def training_step(self, model, inputs, num_items_in_batch=None):
@@ -456,6 +472,8 @@ def run_local_training():
     finetuned_longer_model = AutoModelForCausalLM.from_pretrained(
         "lamini/lamini_docs_finetuned"
     )
+    # This replaces the Pythia tokenizer. The longer model's ids have to
+    # come from the tokenizer saved with those weights.
     tokenizer = AutoTokenizer.from_pretrained("lamini/lamini_docs_finetuned")
 
     finetuned_longer_model.to(device)
@@ -475,6 +493,11 @@ def run_local_training():
     print(count)
 
     ## Compare the base model and the longer-trained model on a new prompt.
+    # "What do you think of Mars?" is outside the Lamini docs task, so the
+    # two answers show what the longer training did to a general question.
+    # This load replaces the 3-step base_model with a fresh copy of the
+    # original Pythia weights, and pairs it with a matching tokenizer.
+    # The longer model still uses the tokenizer loaded with it above.
     base_tokenizer = AutoTokenizer.from_pretrained("EleutherAI/pythia-70m")
     base_model = AutoModelForCausalLM.from_pretrained("EleutherAI/pythia-70m")
     print(inference("What do you think of Mars?", base_model, base_tokenizer))
@@ -508,6 +531,9 @@ def run_lamini_examples(test_question):
     ## Choose base model, load data, train. Training returns a model ID,
     ## dashboard, and playground interface.
     model = BasicModelRunner("EleutherAI/pythia-410m")
+    # input_key and output_key must match the field names in lamini_docs.jsonl,
+    # which are "question" and "answer". train() uploads those pairs and
+    # submits the hosted job. The job record it returns is not stored.
     model.load_data_from_jsonlines(
         str(DATA_DIR / "lamini_docs.jsonl"),
         input_key="question",
@@ -520,6 +546,8 @@ def run_lamini_examples(test_question):
 
     lofd = []
     for e in out["eval_results"]:
+        # outputs[0] is the model just trained; outputs[1] is the base model
+        # on the same input. The table columns below use that order.
         q = f"{e['input']}"
         at = f"{e['outputs'][0]['output']}"
         ab = f"{e['outputs'][1]['output']}"
@@ -534,6 +562,8 @@ def run_lamini_examples(test_question):
 
 def main():
     logging.basicConfig(level=logging.INFO)
+    # Local training returns the test question so the hosted models below
+    # are asked the same string.
     test_question = run_local_training()
     run_lamini_examples(test_question)
 

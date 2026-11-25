@@ -17,16 +17,22 @@ import datasets
 import jsonlines
 import pandas as pd
 from datasets import load_dataset
+# rich.print pretty-prints the dataset rows and formatted examples below.
 from rich import print
 
+# INSTRUCTION_FILE is the raw question/answer JSONL this lesson reads.
+# PROCESSED_FILE is the question/answer training file the loop writes later.
 DATA_DIR = Path(__file__).resolve().parent
 INSTRUCTION_FILE = DATA_DIR / "lamini_docs.jsonl"
 PROCESSED_FILE = DATA_DIR / "lamini_docs_processed.jsonl"
 
 ## Pretrained datasets are huge, so streaming=True downloads examples on demand
 ## instead of loading the whole dataset into memory.
+# The Pile load is an alternate pretraining corpus, left commented.
 # pretrained_dataset = load_dataset("EleutherAI/pile", split="train", streaming=True)
 
+# This lesson streams the English C4 split instead. load_dataset returns an
+# iterable of examples; nothing is fully downloaded yet.
 pretrained_dataset = load_dataset("c4", "en", split="train", streaming=True)
 
 ## islice() takes only the first n examples from the stream.
@@ -50,6 +56,8 @@ print("First question + answer:", text)
 
 ## Datasets from different sources use different column names. This block
 ## detects the convention and concatenates the first example accordingly.
+# The joined string is assigned and never read again. The template below is
+# what the training rows are built from.
 if "question" in examples and "answer" in examples:
     text = examples["question"][0] + examples["answer"][0]
 elif "instruction" in examples and "response" in examples:
@@ -97,6 +105,8 @@ for i in range(num_examples):
     text_with_prompt_template_q = prompt_template_q.format(question=question)
     finetuning_dataset_question_answer.append({"question": text_with_prompt_template_q, "answer": answer})
 
+# Same first example in the two training shapes: one "text" field, then
+# separate "question" and "answer" fields. The writer below saves the second.
 pprint(finetuning_dataset_text_only[0])
 
 pprint(finetuning_dataset_question_answer[0])

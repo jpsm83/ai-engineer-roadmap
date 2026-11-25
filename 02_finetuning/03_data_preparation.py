@@ -11,8 +11,13 @@ from pprint import pprint
 import datasets
 import pandas as pd
 from transformers import AutoTokenizer
+# rich.print pretty-prints token ids and dataset rows in this lesson.
 from rich import print
 
+# Pythia-70m is the small model whose tokenizer this lesson loads.
+# INSTRUCTION_FILE is the raw question/answer JSONL. MAX_LENGTH is the token
+# cap later tokenize steps refuse to exceed. PROMPT_TEMPLATE wraps the
+# question only; the answer stays outside it so it can become the label.
 MODEL_NAME = "EleutherAI/pythia-70m"
 DATA_DIR = Path(__file__).resolve().parent
 INSTRUCTION_FILE = DATA_DIR / "lamini_docs.jsonl"
@@ -66,6 +71,8 @@ def show_tokenizer_basics(tokenizer):
     encoded_texts_truncation_left = tokenizer(list_texts, max_length=3, truncation=True)
     print("Using left-side truncation: ", encoded_texts_truncation_left["input_ids"])
 
+    # Padding and truncation together: every row is cut to 3 tokens and
+    # padded out to that same length.
     encoded_texts_both = tokenizer(
         list_texts, max_length=3, truncation=True, padding=True
     )
@@ -121,6 +128,8 @@ def build_finetuning_dataset(examples):
 
 def show_tokenizing_one_example(tokenizer, finetuning_dataset):
     ## Concatenate prompt and answer, then tokenize them as one sequence.
+    # return_tensors="np" makes input_ids a numpy array, so shape[1] on the
+    # next line is the token count for this one example.
     text = finetuning_dataset[0]["question"] + finetuning_dataset[0]["answer"]
     tokenized_inputs = tokenizer(text, return_tensors="np", padding=True)
     pprint(tokenized_inputs["input_ids"])
@@ -183,6 +192,8 @@ def build_tokenized_dataset(tokenizer):
 
     ## map() runs tokenize_function once per batch and adds the tokenizer
     ## outputs (input_ids, attention_mask) as new dataset columns.
+    # partial freezes tokenizer so map() can call the function with the
+    # batch alone. batch_size=1 sends one row at a time.
     tokenized_dataset = finetuning_dataset_loaded.map(
         partial(tokenize_function, tokenizer=tokenizer),
         batched=True,
@@ -223,10 +234,14 @@ def show_hub_datasets():
     dataset_swiftie = datasets.load_dataset(taylor_swift_dataset)
     pprint(dataset_swiftie["train"][1])
 
+    # bts and open_llms are only named here. taylor_swift is the dataset loaded above.
     print("Other course datasets:", bts_dataset, open_llms)
 
 
 def main():
+    # Walk the lesson in order: tokenizer behavior on toy strings, one
+    # formatted training row, that same row tokenized, then the full file
+    # tokenized and split. The hub call only prints published datasets.
     tokenizer = load_tokenizer()
     show_tokenizer_basics(tokenizer)
 
