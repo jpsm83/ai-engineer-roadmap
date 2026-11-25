@@ -1,4 +1,5 @@
 import os
+import json
 import openai
 from langchain.tools import tool
 from dotenv import load_dotenv, find_dotenv
@@ -7,26 +8,24 @@ import requests
 import datetime
 from langchain_core.utils.function_calling import convert_to_openai_function
 import wikipedia
-from langchain_classic.chains.openai_functions.openapi import openapi_spec_to_openai_fn
-from langchain_community.utilities.openapi import OpenAPISpec
+from openapi_pydantic import parse_obj
 from langchain_openai import ChatOpenAI
 from langchain_classic.agents.output_parsers.openai_tools import OpenAIToolsAgentOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.agents import AgentFinish
+from rich import print
 
 _ = load_dotenv(find_dotenv()) # read local .env file
 openai.api_key = os.environ['OPENAI_API_KEY']
+
+llm_model = "gpt-5-nano"
 
 @tool
 def search(query: str) -> str:
     """Search for weather online"""
     return "42f"
 
-search.name
-
-search.description
-
-search.args
+# print(search.name, search.description, search.args)
 
 class SearchInput(BaseModel):
     query: str = Field(description="Thing to search for")
@@ -36,9 +35,9 @@ def search(query: str) -> str:
     """Search for the weather online."""
     return "42f"
 
-search.args
+# print(search.args)
 
-search.run("sf")
+# print(search.run("sf"))
 
 # Define the input schema
 class OpenMeteoInput(BaseModel):
@@ -67,9 +66,12 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
     else:
         raise Exception(f"API Request failed with status code: {response.status_code}")
 
-    current_utc_time = datetime.datetime.utcnow()
+    current_utc_time = datetime.datetime.now(datetime.UTC)
 
-    time_list = [datetime.datetime.fromisoformat(time_str.replace('Z', '+00:00')) for time_str in results['hourly']['time']]
+    time_list = []
+    for time_str in results['hourly']['time']:
+        parsed = datetime.datetime.fromisoformat(time_str.replace('Z', '+00:00'))
+        time_list.append(parsed if parsed.tzinfo else parsed.replace(tzinfo=datetime.UTC))
 
     temperature_list = results['hourly']['temperature_2m']
     
@@ -79,15 +81,11 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
     
     return f'The current temperature is {current_temperature}°C'
 
-get_current_temperature.name
+# print(get_current_temperature.name, get_current_temperature.description, get_current_temperature.args)
 
-get_current_temperature.description
+# print(convert_to_openai_function(get_current_temperature))
 
-get_current_temperature.args
-
-convert_to_openai_function(get_current_temperature)
-
-get_current_temperature.invoke({"latitude": 13, "longitude": 14})
+# print(get_current_temperature.invoke({"latitude": 13, "longitude": 14}))
 
 @tool
 def search_wikipedia(query: str) -> str:
@@ -107,13 +105,11 @@ def search_wikipedia(query: str) -> str:
         return "No good Wikipedia Search Result was found"
     return "\n\n".join(summaries)
 
-search_wikipedia.name
+# print(search_wikipedia.name, search_wikipedia.description, search_wikipedia.args)
 
-search_wikipedia.description
+# print(convert_to_openai_function(search_wikipedia))
 
-convert_to_openai_function(search_wikipedia)
-
-search_wikipedia.invoke({"query": "langchain"})
+# print(search_wikipedia.invoke({"query": "langchain"}))
 
 text = """
 {
@@ -297,17 +293,53 @@ text = """
 }
 """
 
-spec = OpenAPISpec.from_text(text)
+spec = parse_obj(json.loads(text))
 
-pet_openai_functions, pet_callables = openapi_spec_to_openai_fn(spec)
+_PARAM_LOCATIONS = {
+    "query": "params",
+    "header": "headers",
+    "cookie": "cookies",
+    "path": "path_params",
+}
 
-pet_openai_functions
+pet_openai_functions = []
 
-model = ChatOpenAI(temperature=0).bind_tools(pet_openai_functions)
+for path_item in (spec.paths or {}).values():
+    for method in ("get", "put", "post", "delete", "options", "head", "patch", "trace"):
+        operation = getattr(path_item, method)
+        if operation is None:
+            continue
+        grouped = {}
+        required = {}
+        for parameter in [*(path_item.parameters or []), *(operation.parameters or [])]:
+            arg_name = _PARAM_LOCATIONS[parameter.param_in]
+            schema = parameter.param_schema.model_dump(mode="json", by_alias=True, exclude_none=True)
+            if parameter.description and "description" not in schema:
+                schema["description"] = parameter.description
+            grouped.setdefault(arg_name, {})[parameter.name] = schema
+            if parameter.required:
+                required.setdefault(arg_name, []).append(parameter.name)
+        properties = {
+            arg_name: {
+                "type": "object",
+                "properties": params,
+                "required": required.get(arg_name, []),
+            }
+            for arg_name, params in grouped.items()
+        }
+        pet_openai_functions.append({
+            "name": operation.operationId,
+            "description": operation.description or operation.summary or "",
+            "parameters": {"type": "object", "properties": properties},
+        })
 
-model.invoke("what are three pets names")
+# print(pet_openai_functions)
 
-model.invoke("tell me about pet with id 42")
+model = ChatOpenAI(model=llm_model, temperature=1).bind_tools(pet_openai_functions)
+
+# print(model.invoke("what are three pets names"))
+
+# print(model.invoke("tell me about pet with id 42"))
 
 # Routing
 
@@ -317,37 +349,38 @@ functions = [
     ]
 ]
 
-model = ChatOpenAI(temperature=0).bind_tools(functions)
+model = ChatOpenAI(model=llm_model, temperature=1).bind_tools(functions)
 
-model.invoke("what is the weather in sf right now")
+# print(model.invoke("what is the weather in sf right now"))
 
-model.invoke("what is langchain")
+# print(model.invoke("what is langchain"))
 
 prompt = ChatPromptTemplate.from_messages([
     ("system", "You are helpful but sassy assistant"),
     ("user", "{input}"),
 ])
+
 chain = prompt | model
 
-chain.invoke({"input": "what is the weather in sf right now"})
+# print(chain.invoke({"input": "what is the weather in sf right now"}))
 
 chain = prompt | model | OpenAIToolsAgentOutputParser()
 
 result = chain.invoke({"input": "what is the weather in sf right now"})
 
-type(result)
+# print(result)
 
-result[0].tool
+# print(result[0].tool)
 
-result[0].tool_input
+# print(result[0].tool_input)
 
-get_current_temperature.invoke(result[0].tool_input)
+# print(get_current_temperature.invoke(result[0].tool_input))
 
 result = chain.invoke({"input": "hi!"})
 
-type(result)
+# print(type(result))
 
-result.return_values
+# print(result.return_values)
 
 def route(result):
     if isinstance(result, AgentFinish):
@@ -363,10 +396,12 @@ chain = prompt | model | OpenAIToolsAgentOutputParser() | route
 
 result = chain.invoke({"input": "What is the weather in san francisco right now?"})
 
-result
+print(result)
 
 result = chain.invoke({"input": "What is langchain?"})
 
-result
+print(result)
 
-chain.invoke({"input": "hi!"})
+result = chain.invoke({"input": "hi!"})
+
+print(result)
