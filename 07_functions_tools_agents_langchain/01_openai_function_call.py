@@ -5,12 +5,16 @@ from rich import print
 from dotenv import load_dotenv, find_dotenv
 from openai import OpenAI
 
+# Load OPENAI_API_KEY from a local .env file.
+# The client below is given that key directly.
 _ = load_dotenv(find_dotenv())  # read local .env file
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-# Example dummy function hard coded to return the same weather
-# In production, this could be your backend API or an external API
+# Stand-in for a weather API. It always reports 72 degrees, sunny and windy.
+# The model never runs this function. The live path below calls it with the
+# arguments the model chose, and sends the JSON string back as the tool result.
+# The docstring is for a reader. The schema in `tools` is what the model sees.
 def get_current_weather(location, unit="fahrenheit"):
     """Get the current weather in a given location"""
     weather_info = {
@@ -23,7 +27,9 @@ def get_current_weather(location, unit="fahrenheit"):
     return json.dumps(weather_info)
 
 
-# define a tool
+# The tool list sent with the request. This describes the function; it does not call it.
+# "name" is get_current_weather, the same name the forced tool_choice uses later.
+# The model fills "location" (required) and, when it wants, "unit".
 tools = [
     {
         "type": "function",
@@ -45,6 +51,9 @@ tools = [
     }
 ]
 
+# A weather question, so a model that is allowed to choose would be expected
+# to call get_current_weather. The live path further down replaces this list
+# with a slightly different wording of the same question.
 messages = [
     {
         "role": "user",
@@ -52,6 +61,15 @@ messages = [
     }
 ]
 
+# The block below is a string, so none of it runs. It walks the same tools
+# through tool_choice, and the prints would show the completion, the assistant
+# message, its text, any tool call, the parsed arguments, and the dummy JSON:
+#   - tool_choice omitted: the model decides
+#   - "hi!" with tools available: the model can answer in text and skip the tool
+#   - "auto": the same decision as omitting tool_choice
+#   - "none" on "hi!": the model must answer in text
+#   - "none" on a weather question: the model still cannot call the tool
+#   - a forced function on "hi!": the model must call get_current_weather anyway
 '''
 # Call the chat completions endpoint
 response = client.chat.completions.create(
@@ -156,6 +174,8 @@ response = client.chat.completions.create(
 print(response)
 '''
 
+# Live path. The question already asks for weather; forcing the tool makes this
+# call about the tool-call shape, not about whether the model chooses the tool.
 messages = [
     {
         "role": "user",
@@ -163,6 +183,9 @@ messages = [
     }
 ]
 
+# tools is the schema above. tool_choice names get_current_weather, which has
+# to match the function name in that schema. The reply's tool_calls hold the
+# arguments the model filled in. The text content is usually empty on this path.
 response = client.chat.completions.create(
     model="gpt-5-nano",
     messages=messages,
@@ -170,15 +193,23 @@ response = client.chat.completions.create(
     tool_choice={"type": "function", "function": {"name": "get_current_weather"}},
 )
 
+# The full completion: id, model, and the choice that contains the assistant message.
 # print(response)
 
+# Keep that assistant message, tool call included, so the next request
+# can attach a result to it.
 messages.append(response.choices[0].message)
 
+# One forced call, so the first tool call is the one to run.
+# arguments is a JSON string; the dummy function wants those keys as keywords.
 tool_call = response.choices[0].message.tool_calls[0]
 args = json.loads(tool_call.function.arguments)
 
+# Run the local function. observation is the JSON weather string.
 observation = get_current_weather(**args)
 
+# A tool message answers one call. tool_call_id has to be tool_call.id,
+# so the model can tell which request this result belongs to.
 messages.append(
         {
             "role": "tool",
@@ -187,8 +218,11 @@ messages.append(
         }
 )
 
+# The conversation so far: user question, assistant tool call, tool result.
 # print(messages)
 
+# Second request. tools is omitted, so the model is not choosing a function.
+# It reads the tool result already in messages and writes the weather answer.
 response = client.chat.completions.create(
     model="gpt-5-nano",
     messages=messages,
