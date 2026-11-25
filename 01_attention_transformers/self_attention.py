@@ -11,8 +11,12 @@ can be followed by hand.
 import torch ## torch let's us create tensors and also provides helper functions
 import torch.nn as nn ## torch.nn gives us nn.module() and nn.Linear()
 import torch.nn.functional as F # This gives us the softmax()
+# rich.print pretty-prints the tensors this lesson displays.
 from rich import print
 
+# Self-attention. The same token encodings are projected into queries, keys,
+# and values, and every token can mix information from every token in the
+# sequence, including tokens that come later.
 class SelfAttention(nn.Module): 
                             
     def __init__(self, d_model=2,  
@@ -77,11 +81,16 @@ class SelfAttention(nn.Module):
 
         return attention_scores
 
+# The sequence the rest of the file attends over: 3 tokens, 2 features.
+# Queries, keys, and values are projections of these rows.
 ## create a matrix of token encodings...
 encodings_matrix = torch.tensor([[1.16, 0.23],
                                  [0.57, 1.36],
                                  [4.41, -2.16]])
 
+# Fixes the random start of W_q, W_k, and W_v so the weight prints match
+# a second run. d_model=2 matches the two feature columns above. row_dim 0
+# is the token axis and col_dim 1 is the feature axis that forward transposes.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
@@ -90,9 +99,13 @@ selfAttention = SelfAttention(d_model=2,
                                row_dim=0,
                                col_dim=1)
 
+# Calling the module runs forward(). The print has shape (3, 2): a new
+# vector for each input token.
 ## calculate basic attention for the token encodings
 print("attention scores:\n", selfAttention(encodings_matrix), "\n")
 
+# Linear keeps each projection as (out_features, in_features). Transpose
+# prints the matrix a token row is multiplied by. The heading calls it W^T.
 ## print out the weight matrix that creates the queries
 print("W_q^T:\n", selfAttention.W_q.weight.transpose(0, 1), "\n")
 
@@ -104,6 +117,8 @@ print("W_v^T:\n", selfAttention.W_v.weight.transpose(0, 1), "\n")
 
 ## The rest of the file repeats forward() step by step so each intermediate
 ## matrix can be inspected. The final result should match the output above.
+# The literals 0 and 1 are row_dim and col_dim from the constructor.
+# k.size(-1) is the length of that feature axis, d_k.
 q = selfAttention.W_q(encodings_matrix)
 print("q:\n", q, "\n")
 

@@ -9,8 +9,12 @@ concatenates their outputs.
 import torch ## torch let's us create tensors and also provides helper functions
 import torch.nn as nn ## torch.nn gives us nn.module() and nn.Linear()
 import torch.nn.functional as F # This gives us the softmax()
+# rich.print pretty-prints the tensors this lesson displays.
 from rich import print
 
+# Cross-attention. Queries come from the decoder encodings. Keys and values
+# come from the encoder encodings. The output has one vector per decoder
+# token: a weighted blend of the encoder values.
 class Attention(nn.Module): 
                             
     def __init__(self, d_model=2,  
@@ -29,6 +33,10 @@ class Attention(nn.Module):
         self.col_dim = col_dim
 
 
+    # encodings_for_q is the decoder side. encodings_for_k and encodings_for_v
+    # are the encoder side. mask is True on encoder positions that should drop
+    # out before the softmax. The returned tensor has the decoder's length and
+    # width d_model, and the multi-head class below concatenates those tensors.
     ## The only change from SelfAttention and attention is that
     ## now we expect 3 sets of encodings to be passed in...
     def forward(self, encodings_for_q, encodings_for_k, encodings_for_v, mask=None):
@@ -47,6 +55,7 @@ class Attention(nn.Module):
 
         ## Step 4: optionally hide invalid positions before softmax.
         if mask is not None:
+            # A large negative score becomes a weight of about 0 after softmax.
             scaled_sims = scaled_sims.masked_fill(mask=mask, value=-1e9)
             
         ## Step 5: normalize scores and blend the value vectors.
@@ -56,6 +65,10 @@ class Attention(nn.Module):
 
         return attention_scores
 
+# Three sequences, each 3 tokens by 2 features, with the same numbers on each
+# side. q, k, and v still come out different, because each sequence goes
+# through its own weight matrix. The first tensor is the decoder side and the
+# other two are the encoder side.
 ## create matrices of token encodings...
 encodings_for_q = torch.tensor([[1.16, 0.23],
                                 [0.57, 1.36],
@@ -69,6 +82,10 @@ encodings_for_v = torch.tensor([[1.16, 0.23],
                                 [0.57, 1.36],
                                 [4.41, -2.16]])
 
+# The projections start at random. Pinning the seed makes W_q, W_k, and W_v
+# the same on every run, so the printed matrices can be compared by hand.
+# d_model=2 is the width of the encodings above. Axis 0 is a token, axis 1
+# is a feature.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
@@ -77,10 +94,15 @@ attention = Attention(d_model=2,
                       row_dim=0,
                       col_dim=1)
 
+# Runs the full forward pass. The printed matrix is the one the unrolled
+# steps below are walking toward.
 ## calculate encoder-decoder attention
 print("encoder-decoder attention output:\n",
       attention(encodings_for_q, encodings_for_k, encodings_for_v), "\n")
 
+# Each Linear stores its matrix as (out_features, in_features).
+# Transposing shows (in_features, out_features), the matrix a token row
+# is multiplied by. The labels call that matrix W^T.
 ## print out the weight matrix that creates the queries
 print("W_q^T:\n", attention.W_q.weight.transpose(0, 1), "\n")
 
@@ -90,6 +112,11 @@ print("W_k^T:\n", attention.W_k.weight.transpose(0, 1), "\n")
 ## print out the weight matrix that creates the values
 print("W_v^T:\n", attention.W_v.weight.transpose(0, 1), "\n")
 
+# forward() in the open, on the path with no mask. The literals 0 and 1 are
+# row_dim and col_dim from the constructor, and k.size(-1) is the length of
+# that feature axis, d_k. q, k, and v are the projected encodings. sims holds
+# every query-key dot product. Scaling by sqrt(d_k), then softmax along the
+# key axis, then multiplying by v, should match the forward print above.
 q = attention.W_q(encodings_for_q)
 print("q:\n", q, "\n")
 
@@ -111,6 +138,8 @@ print("attention_percents:\n", attention_percents, "\n")
 print("attention output from q, k, v:\n",
       torch.matmul(attention_percents, v), "\n")
 
+# Each head holds its own W_q, W_k, and W_v, so the same decoder queries
+# can be scored in more than one way.
 class MultiHeadAttention(nn.Module):
 
     def __init__(self, 
@@ -148,6 +177,8 @@ class MultiHeadAttention(nn.Module):
 ## heads along col_dim. With d_model=2 and num_heads=2, the result has 4
 ## columns. A full Transformer adds an output projection back to d_model.
 
+# One head, and the same seed as the Attention above, so this run starts
+# from the same weights. With a single head the printed width is still d_model.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
@@ -163,6 +194,9 @@ print("multi-head attention output (1 head):\n",
                           encodings_for_k,
                           encodings_for_v), "\n")
 
+# Reset the seed so the first of the two heads starts from that same draw.
+# The second head is a new initialization. Concatenating two widths of 2
+# yields 4 columns.
 ## reset the seed so the 2-head version starts from the same weights
 torch.manual_seed(42)
 

@@ -8,8 +8,12 @@ language models such as GPT, where the next token must not be visible yet.
 import torch ## torch let's us create tensors and also provides helper functions
 import torch.nn as nn ## torch.nn gives us nn.module() and nn.Linear()
 import torch.nn.functional as F # This gives us the softmax()
+# rich.print pretty-prints the tensors this lesson displays.
 from rich import print
 
+# Causal self-attention. One sequence is projected into queries, keys, and
+# values. A True in the mask removes that key from the blend, so each output
+# row only mixes values from tokens the mask left open.
 class MaskedSelfAttention(nn.Module): 
                             
     def __init__(self, d_model=2,  
@@ -59,14 +63,20 @@ class MaskedSelfAttention(nn.Module):
 
         return attention_scores
 
+# The only sequence in the demo: 3 tokens, 2 features. Queries, keys, and
+# values are three projections of these same rows.
 ## create a matrix of token encodings...
 encodings_matrix = torch.tensor([[1.16, 0.23],
                                  [0.57, 1.36],
                                  [4.41, -2.16]])
 
+# Pin the initial projections so the printed weights come back the same
+# on a later run.
 ## set the seed for the random number generator
 torch.manual_seed(42)
 
+# d_model=2 matches the two feature columns. row_dim 0 is the token axis
+# and col_dim 1 is the feature axis that forward transposes.
 ## create a masked self_attention object
 maskedSelfAttention = MaskedSelfAttention(d_model=2,
                                row_dim=0,
@@ -82,10 +92,14 @@ mask = torch.tril(torch.ones(3, 3))
 mask = mask == 0
 print("mask:\n", mask, "\n")
 
+# Row i mixes value positions 0 through i. Each row therefore sees a longer
+# prefix than the row above it.
 ## calculate masked self_attention
 print("masked attention scores:\n",
       maskedSelfAttention(encodings_matrix, mask), "\n")
 
+# Stored shape is (out_features, in_features). The transpose is the matrix
+# each token row is multiplied by. The heading calls it W^T.
 ## print out the weight matrix that creates the queries
 print("W_q^T:\n", maskedSelfAttention.W_q.weight.transpose(0, 1), "\n")
 
@@ -95,6 +109,11 @@ print("W_k^T:\n", maskedSelfAttention.W_k.weight.transpose(0, 1), "\n")
 ## print out the weight matrix that creates the values
 print("W_v^T:\n", maskedSelfAttention.W_v.weight.transpose(0, 1), "\n")
 
+# The same steps as forward(), with each matrix printed. The literals 0 and 1
+# are row_dim and col_dim from the constructor, and k.size(-1) is the length
+# of that feature axis, d_k. masked_fill writes a large negative number into
+# the upper triangle, so softmax assigns those positions a weight of about 0.
+# The last matmul should match the scores printed above.
 q = maskedSelfAttention.W_q(encodings_matrix)
 print("q:\n", q, "\n")
 
